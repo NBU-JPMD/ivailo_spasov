@@ -26,10 +26,10 @@ public class Client {
 			byte[] buff = new byte[buff_size];
 			int read = 0;
 			
-			while((read = System.in.read(buff, 0, buff.length)) != -1) {
+			while((read = System.in.read(buff)) != -1) {
 				cl_os.write(buff, 0, read);
 				cl_os.flush();
-				if((read = cl_is.read(buff, 0, buff.length)) != -1) {
+				if((read = cl_is.read(buff)) != -1) {
 					System.out.write(buff, 0, read);
 					System.out.flush();
 				}

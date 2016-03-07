@@ -16,7 +16,7 @@ public class Server {
 			client.configureBlocking(false);
 			client.register(sel, SelectionKey.OP_READ, null);
 			System.out.println("NEW CLIENT " + client.getRemoteAddress());
-		}catch (IOException ex) {
+		} catch (IOException ex) {
 			ex.printStackTrace();
 			CloseSelectableChannel(client);
 		}
@@ -34,8 +34,12 @@ public class Server {
 	
 	private void CloseSelector(Selector sel) {
 		try {
-			if(sel != null)
+			if(sel != null) {
+				for(SelectionKey ky : sel.keys()) {
+					CloseSelectableChannel(ky.channel());
+				}
 				sel.close();
+			}
 		} catch (IOException ex){
 			ex.printStackTrace();
 		}
@@ -65,9 +69,7 @@ public class Server {
 		System.out.println("Starting...");
 		try {
 			server_socket_chanel = ServerSocketChannel.open();
-			ServerSocket server_socket = null;
-			server_socket = server_socket_chanel.socket();
-			server_socket.bind(new InetSocketAddress(port));
+			server_socket_chanel.socket().bind(new InetSocketAddress(port));
 			server_socket_chanel.configureBlocking(false);
 			
 			selector = Selector.open();
