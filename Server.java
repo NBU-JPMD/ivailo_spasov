@@ -7,14 +7,13 @@ import java.io.*;
 public class Server {
 	private boolean running = false;
 	private int port = 6969;
-	private int buff_size = 1024;
 	
 	private void HandleAccept(ServerSocketChannel ssc, Selector sel) {
 		SocketChannel client = null;
 		try {
 			client = ssc.accept();
 			client.configureBlocking(false);
-			client.register(sel, SelectionKey.OP_READ, null);
+			client.register(sel, SelectionKey.OP_READ, new ISProtocol());
 			System.out.println("NEW CLIENT " + client.getRemoteAddress());
 		} catch (IOException ex) {
 			ex.printStackTrace();
@@ -44,17 +43,24 @@ public class Server {
 			ex.printStackTrace();
 		}
 	}
-	
-	private void HandleRead(SocketChannel cl) {
-		ByteBuffer buffer = ByteBuffer.allocate(buff_size);
+
+	private void HandleRead(SocketChannel cl, ISProtocol pr) {
 		try {
-			if(cl.read(buffer) != -1) {
-				System.out.println("MESSAGE FROM CLIENT " + cl.getRemoteAddress());
-				buffer.flip();
-				cl.write(buffer);
-			} else {
-				System.out.println("DISCONNECT CLIENT " + cl.getRemoteAddress());
-				CloseSelectableChannel(cl);
+			ParseState state = pr.read(cl);
+			if(state == ParseState.READ_DONE) {
+				try {
+					ISMsg msg = pr.getMsg();
+					System.out.println(msg.toString());
+					msg.setRespCode(100);
+					pr.setMsg(msg);
+					pr.write(cl);
+					pr.reset();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else if (state == ParseState.READ_ERROR) {
+				System.out.println("ParseState.READ_ERROR");
+				pr.reset();
 			}
 		} catch (IOException ex) {
 			ex.printStackTrace();
@@ -84,7 +90,7 @@ public class Server {
 						if (ky.isAcceptable()) {
 							HandleAccept(server_socket_chanel, selector);
 						} else if (ky.isReadable()) {
-							HandleRead((SocketChannel)ky.channel());
+							HandleRead((SocketChannel)ky.channel(), (ISProtocol)ky.attachment());
 						}
 						iter.remove();
 					}
@@ -98,7 +104,7 @@ public class Server {
 			running = false;
 		}
 	}
-	
+
 	public static void main(String [] args) {
 		Server srv = new Server();
 		srv.Start();

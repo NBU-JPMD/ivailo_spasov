@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 public class Client {
 	private String remote_host = "localhost";
@@ -23,18 +24,34 @@ public class Client {
 			InputStream cl_is = client.getInputStream();
 			OutputStream cl_os = client.getOutputStream();
 			
-			byte[] buff = new byte[buff_size];
-			int read = 0;
+			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+			String line;
+			ISProtocol pr = new ISProtocol();
 			
-			while((read = System.in.read(buff)) != -1) {
-				cl_os.write(buff, 0, read);
-				cl_os.flush();
-				if((read = cl_is.read(buff)) != -1) {
-					System.out.write(buff, 0, read);
-					System.out.flush();
+			while((line = br.readLine()) != null) {
+				ISMsg msg = new ISMsg();
+				msg.addKey("msg", line);
+
+				pr.setMsg(msg);
+				pr.write(cl_os);
+
+				pr.reset();
+				ParseState status;
+				do {
+					status = pr.read(cl_is);
+				} while(status != ParseState.READ_DONE && status != ParseState.READ_ERROR);
+
+				if(status == ParseState.READ_DONE) {
+					try {
+						System.out.println(pr.getMsg());
+					}catch (Exception e) {
+						e.printStackTrace();
+					}
+				} else {
+					System.out.println("RSP ERROR");
 				}
 			}
-		} catch (IOException ex) {
+		} catch (Exception ex) {
 			ex.printStackTrace();
 		} finally {
 			CloseSocket(client);
