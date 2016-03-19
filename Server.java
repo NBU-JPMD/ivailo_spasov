@@ -7,6 +7,15 @@ import java.io.*;
 public class Server {
 	private boolean running = false;
 	private int port = 6969;
+	private Selector selector = null;
+
+	public void Stop() {
+		running = false;
+		System.out.println("Stoping server...");
+		if(selector != null) {
+			selector.wakeup();
+		}
+	}
 	
 	private void HandleAccept(ServerSocketChannel ssc, Selector sel) {
 		SocketChannel client = null;
@@ -98,7 +107,11 @@ public class Server {
 	
 	public void Start(){
 		ServerSocketChannel server_socket_chanel = null;
-		Selector selector = null;
+
+		if (running == true) {
+			Stop();
+		}
+
 		running = true;
 		System.out.println("Starting...");
 		try {
@@ -129,12 +142,44 @@ public class Server {
 		} finally {
 			CloseSelectableChannel(server_socket_chanel);
 			CloseSelector(selector);
+			selector = null;
 			running = false;
 		}
 	}
 
 	public static void main(String [] args) {
-		Server srv = new Server();
+		ServerThread st = new ServerThread();
+		st.start();
+
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		String line;
+		try {
+			outerloop:
+			while((line = br.readLine()) != null) {
+				line = line.replaceAll("\\s+","");
+				line = line.toLowerCase();
+				switch(line) {
+					case "stop":
+						st.Stop();
+						break outerloop;
+					default:
+						System.out.println("Unknown command");
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+}
+
+class ServerThread extends Thread {
+	private Server srv = new Server();
+
+	public void run() {
 		srv.Start();
+	}
+
+	public void Stop() {
+		srv.Stop();
 	}
 }
