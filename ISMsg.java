@@ -2,6 +2,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.lang.StringBuilder;
 
 public class ISMsg implements Serializable {
     private int resp_code = 0;
@@ -25,10 +26,15 @@ public class ISMsg implements Serializable {
     }
 
     public String toString() {
-        String string = "resp_code=" + resp_code + "\n";
+		StringBuilder sb = new StringBuilder();
+		sb.append("resp_code=");
+		sb.append(resp_code);
         for (Map.Entry<String, Object> entry : dict.entrySet()) {
-            string = string + entry.getKey() + "=" + entry.getValue().toString();
+			sb.append("\n");
+			sb.append(entry.getKey());
+			sb.append("=");
+			sb.append(entry.getValue().toString());
         }
-        return string;
+        return sb.toString();
     }
 }

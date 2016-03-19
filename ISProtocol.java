@@ -10,6 +10,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.InputStream;
 import java.text.ParseException;
+import java.lang.IllegalArgumentException;
 
 enum ParseState {
     READ_BEGIN,
@@ -17,6 +18,48 @@ enum ParseState {
     READ_DATA,
 	READ_DONE,
 	READ_ERROR
+}
+
+class ByteBufferBackedOutputStream extends OutputStream {
+    ByteBuffer buf;
+
+    public ByteBufferBackedOutputStream(ByteBuffer buf) {
+        this.buf = buf;
+    }
+
+    public void write(int b) throws IOException {
+        buf.put((byte) b);
+    }
+
+    public void write(byte[] bytes, int off, int len) throws IOException {
+        buf.put(bytes, off, len);
+    }
+}
+
+class ByteBufferBackedInputStream extends InputStream {
+
+    ByteBuffer buf;
+
+    public ByteBufferBackedInputStream(ByteBuffer buf) {
+        this.buf = buf;
+    }
+
+    public int read() throws IOException {
+        if (!buf.hasRemaining()) {
+            return -1;
+        }
+        return buf.get() & 0xFF;
+    }
+
+    public int read(byte[] bytes, int off, int len) throws IOException {
+        if (!buf.hasRemaining()) {
+            return -1;
+        }
+
+        len = Math.min(len, buf.remaining());
+        buf.get(bytes, off, len);
+        return len;
+    }
 }
 
 public class ISProtocol {
@@ -54,7 +97,7 @@ public class ISProtocol {
 			buffer_header.flip();
 			data_size = buffer_header.getInt();
 			byte header_lrc = calculateLRC(buffer_header.array(), 2);
-			if(header_lrc == buffer_header.get()) {
+			if(header_lrc == buffer_header.get() && buff_size >= data_size) {
 				state = ParseState.READ_DATA;
 				data_lrc = buffer_header.get();
 			} else {
@@ -83,7 +126,7 @@ public class ISProtocol {
 		}
 	}
 
-	public ParseState read(SocketChannel cl) throws IOException {
+	public ParseState read(SocketChannel cl) throws IOException, IllegalArgumentException {
 		switch (state) {
 			case READ_BEGIN:
 			case READ_HEADER:
@@ -93,14 +136,17 @@ public class ISProtocol {
 				read_data(cl);
 				break;
 			default:
-				throw new IOException("Wrong state");
+				throw new IllegalArgumentException("Wrong state");
 		}
 		return state;
 	}
 
 	private void read_header(InputStream is) throws IOException {
-		int read = is.read(buffer_header.array(), buffer_header.position(), buffer_header.limit() -buffer_header.position());
+		byte[] data = buffer_header.array();
+		int position = buffer_header.position();
+		int limit = buffer_header.limit();
 
+		int read = is.read(data, position, limit-position);
 		if(read == -1)
 			throw new IOException("Connection closed");
 
@@ -109,8 +155,11 @@ public class ISProtocol {
 	}
 
 	private void read_data(InputStream is) throws IOException {
-		int read = is.read(buffer_data.array(), buffer_data.position(), buffer_data.limit() -buffer_data.position());
+		byte[] data = buffer_data.array();
+		int position = buffer_data.position();
+		int limit = buffer_data.limit();
 
+		int read = is.read(data, position, limit-position);
 		if(read == -1)
 			throw new IOException("Connection closed");
 
@@ -118,7 +167,7 @@ public class ISProtocol {
 		read_data_parse();
 	}
 
-	public ParseState read(InputStream is) throws IOException {
+	public ParseState read(InputStream is) throws IOException, IllegalArgumentException {
 		switch (state) {
 			case READ_BEGIN:
 			case READ_HEADER:
@@ -128,12 +177,12 @@ public class ISProtocol {
 				read_data(is);
 				break;
 			default:
-				throw new IOException("Wrong state");
+				throw new IllegalArgumentException("Wrong state");
 		}
 		return state;
 	}
 
-	public ParseState write(SocketChannel cl) throws IOException {
+	public ParseState write(SocketChannel cl) throws IOException, IllegalArgumentException {
 		if(state == ParseState.READ_DONE) {
 			buffer_header.flip();
 			buffer_data.flip();
@@ -141,12 +190,12 @@ public class ISProtocol {
 			cl.write(buffer_header);
 			cl.write(buffer_data);
 		} else {
-			throw new IOException("Wrong state");
+			throw new IllegalArgumentException("Wrong state");
 		}
 		return state;
 	}
 
-	public ParseState write(OutputStream os) throws IOException {
+	public ParseState write(OutputStream os) throws IOException, IllegalArgumentException {
 		if(state == ParseState.READ_DONE) {
 			buffer_header.flip();
 			buffer_data.flip();
@@ -155,7 +204,7 @@ public class ISProtocol {
 			os.write(buffer_data.array(), 0, buffer_data.limit());
 			os.flush();
 		} else {
-			throw new IOException("Wrong state");
+			throw new IllegalArgumentException("Wrong state");
 		}
 		return state;
 	}
@@ -170,32 +219,38 @@ public class ISProtocol {
 		buffer_data.clear();
 	}
 
-	public ISMsg getMsg() throws IOException, ClassNotFoundException {
+	public ISMsg getMsg() throws IOException {
 		if(state != ParseState.READ_DONE)
-			throw new IOException("Wrong state");
+			throw new IllegalArgumentException("Wrong state");
 
-		try (ByteArrayInputStream bis = new ByteArrayInputStream(buffer_data.array());
+		buffer_data.flip();
+
+		try (ByteBufferBackedInputStream bis = new ByteBufferBackedInputStream(buffer_data);
 			 ObjectInput in = new ObjectInputStream(bis)) {
 			return (ISMsg)in.readObject();
+		} catch (ClassNotFoundException cnfe) {
+			cnfe.printStackTrace();
+			return null;
 		}
 	}
 
 	public void setMsg(ISMsg pr) throws IOException {
-		try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			ObjectOutput out = new ObjectOutputStream(bos)) {
+		buffer_data.clear();
+
+		try (ByteBufferBackedOutputStream bos = new ByteBufferBackedOutputStream(buffer_data);
+			 ObjectOutput out = new ObjectOutputStream(bos)) {
 			out.writeObject(pr);
-			byte[] data = bos.toByteArray();
-			data_lrc = calculateLRC(data);
-			data_size = data.length;
-
-			buffer_header.clear();
-			buffer_header.putInt(data_size);
-			buffer_header.put(calculateLRC(buffer_header.array(), 2));
-			buffer_header.put(data_lrc);
-
-			buffer_data.clear();
-			buffer_data.put(data);
-			state = ParseState.READ_DONE;
 		}
+
+		byte[] data = buffer_data.array();
+		data_size = buffer_data.position();
+		data_lrc = calculateLRC(data, data_size);
+
+		buffer_header.clear();
+		buffer_header.putInt(data_size);
+		buffer_header.put(calculateLRC(buffer_header.array(), 2));
+		buffer_header.put(data_lrc);
+
+		state = ParseState.READ_DONE;
 	}
 }

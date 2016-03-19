@@ -30,6 +30,7 @@ public class Client {
 			
 			while((line = br.readLine()) != null) {
 				ISMsg msg = new ISMsg();
+				msg.addKey("type", "echo");
 				msg.addKey("msg", line);
 
 				pr.setMsg(msg);
@@ -42,16 +43,12 @@ public class Client {
 				} while(status != ParseState.READ_DONE && status != ParseState.READ_ERROR);
 
 				if(status == ParseState.READ_DONE) {
-					try {
-						System.out.println(pr.getMsg());
-					}catch (Exception e) {
-						e.printStackTrace();
-					}
+					System.out.println(pr.getMsg());
 				} else {
 					System.out.println("RSP ERROR");
 				}
 			}
-		} catch (Exception ex) {
+		} catch (IOException ex) {
 			ex.printStackTrace();
 		} finally {
 			CloseSocket(client);

@@ -44,27 +44,55 @@ public class Server {
 		}
 	}
 
-	private void HandleRead(SocketChannel cl, ISProtocol pr) {
+	ISMsg CreateErrorMsg(int rsp_code, String message) {
+		ISMsg msg = new ISMsg();
+		msg.setRespCode(rsp_code);
+		msg.addKey("type", "error");
+		msg.addKey("msg", message);
+		return msg;
+	}
+
+	void SendErrorMsg(SocketChannel cl, ISProtocol pr, int rsp_code, String message)
+		 throws IOException, IllegalArgumentException {
+		pr.setMsg(CreateErrorMsg(rsp_code, message));
+		pr.write(cl);
+	}
+
+	private void HandleMsg(SocketChannel cl, ISProtocol pr)
+		 throws IOException, IllegalArgumentException {
+		ISMsg msg;
+		try {
+			msg = pr.getMsg();
+			String type = (String)msg.getData("type");
+			switch(type) {
+				case "echo":
+					pr.write(cl);
+					break;
+				default:
+					SendErrorMsg(cl, pr, 101, "Not implemented");
+			}
+		} finally {
+			pr.reset();
+		}
+	}
+
+	private void HandleRead(SelectionKey ky) {
+		SocketChannel cl = (SocketChannel)ky.channel();
+		ISProtocol pr = (ISProtocol)ky.attachment();
+
 		try {
 			ParseState state = pr.read(cl);
 			if(state == ParseState.READ_DONE) {
-				try {
-					ISMsg msg = pr.getMsg();
-					System.out.println(msg.toString());
-					msg.setRespCode(100);
-					pr.setMsg(msg);
-					pr.write(cl);
-					pr.reset();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+				HandleMsg(cl, pr);
 			} else if (state == ParseState.READ_ERROR) {
-				System.out.println("ParseState.READ_ERROR");
+				SendErrorMsg(cl, pr, 102, "ParseState.READ_ERROR");
 				pr.reset();
 			}
 		} catch (IOException ex) {
 			ex.printStackTrace();
 			CloseSelectableChannel(cl);
+		} catch (IllegalArgumentException ise) {
+			ise.printStackTrace();
 		}
 	}
 	
@@ -90,13 +118,13 @@ public class Server {
 						if (ky.isAcceptable()) {
 							HandleAccept(server_socket_chanel, selector);
 						} else if (ky.isReadable()) {
-							HandleRead((SocketChannel)ky.channel(), (ISProtocol)ky.attachment());
+							HandleRead(ky);
 						}
 						iter.remove();
 					}
 				}
 			}
-		} catch (Exception ex) {
+		} catch (IOException ex) {
 			ex.printStackTrace();
 		} finally {
 			CloseSelectableChannel(server_socket_chanel);
