@@ -8,6 +8,7 @@ public class Server {
 	private boolean running = false;
 	private int port = 6969;
 	private Selector selector = null;
+	private static ISUserManager user_manager = ISUserManager.getInstance();
 
 	public void Stop() {
 		running = false;
@@ -68,7 +69,7 @@ public class Server {
 	}
 
 	private void HandleMsg(SocketChannel cl, ISProtocol pr)
-		 throws IOException, IllegalArgumentException {
+		 throws IOException, IllegalArgumentException, Exception {
 		ISMsg msg;
 		try {
 			msg = pr.getMsg();
@@ -76,6 +77,17 @@ public class Server {
 			switch(type) {
 				case "echo":
 					pr.write(cl);
+					break;
+				case "authenticate":
+					String user = (String)msg.getData("user");
+					String password = (String)msg.getData("password");
+					if(user_manager.isUserValid(user, password)) {
+						pr.setMsg(new ISMsg());
+						pr.write(cl);
+					} else {
+						SendErrorMsg(cl, pr, 200, "Invalid username or password");
+						throw new Exception("authentication failure");
+					}
 					break;
 				default:
 					SendErrorMsg(cl, pr, 101, "Not implemented");
@@ -97,11 +109,14 @@ public class Server {
 				SendErrorMsg(cl, pr, 102, "ParseState.READ_ERROR");
 				pr.reset();
 			}
-		} catch (IOException ex) {
-			ex.printStackTrace();
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
 			CloseSelectableChannel(cl);
 		} catch (IllegalArgumentException ise) {
 			ise.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+			CloseSelectableChannel(cl);
 		}
 	}
 	
@@ -147,6 +162,28 @@ public class Server {
 		}
 	}
 
+	private static void addUser(BufferedReader br, ISUserManager user_manager) {
+		try {
+			System.out.println("Enter new user:");
+			String user = br.readLine();
+			System.out.println("password:");
+			String password = br.readLine();
+			user_manager.addUser(user, password);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private static void delUser(BufferedReader br, ISUserManager user_manager) {
+		try {
+			System.out.println("Enter user to delete:");
+			String user = br.readLine();
+			user_manager.delUser(user);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public static void main(String [] args) {
 		ServerThread st = new ServerThread();
 		st.start();
@@ -162,12 +199,30 @@ public class Server {
 					case "stop":
 						st.Stop();
 						break outerloop;
+					case "add":
+						addUser(br, user_manager);
+						user_manager.save();
+						break;
+					case "list":
+						System.out.println(user_manager.toString());
+						break;
+					case "del":
+						delUser(br, user_manager);
+						user_manager.save();
+						break;
 					default:
 						System.out.println("Unknown command");
 				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+		} finally {
+			try {
+				if(br != null)
+					br.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 }
