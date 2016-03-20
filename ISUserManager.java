@@ -1,5 +1,6 @@
 import java.io.File;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -13,6 +14,7 @@ public class ISUserManager implements Serializable {
 	private static ISUserManager instance = null;
 	private static String user_file = "users.dat";
 	private HashMap<String, String> users = new HashMap<>();
+	private transient HashSet<String> connected_users = new HashSet<>();
 	static final long serialVersionUID = 69;
 
 	protected ISUserManager() {
@@ -23,6 +25,7 @@ public class ISUserManager implements Serializable {
 			try (FileInputStream fin = new FileInputStream(user_file);
 				ObjectInputStream ois = new ObjectInputStream(fin)) {
 				instance = (ISUserManager) ois.readObject();
+				instance.connected_users = new HashSet<>();
 			} catch (Exception e) {
 				e.printStackTrace();
 				instance = new ISUserManager();
@@ -38,6 +41,20 @@ public class ISUserManager implements Serializable {
 
 	public void delUser(String user) {
 		users.remove(user);
+	}
+
+	public boolean connectUser(String user) {
+		if(users.get(user) != null && !connected_users.contains(user)) {
+			connected_users.add(user);
+			return true;
+		}
+		return false;
+	}
+
+	public void disconnectUser(String user) {
+		if(user != null) {
+			connected_users.remove(user);
+		}
 	}
 
 	public boolean isUserValid(String user, String password) {

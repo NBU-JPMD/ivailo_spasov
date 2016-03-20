@@ -23,7 +23,7 @@ public class Server {
 		try {
 			client = ssc.accept();
 			client.configureBlocking(false);
-			client.register(sel, SelectionKey.OP_READ, new ISProtocol());
+			client.register(sel, SelectionKey.OP_READ, new ISServerUser(new ISProtocol()));
 			System.out.println("NEW CLIENT " + client.getRemoteAddress());
 		} catch (IOException ex) {
 			ex.printStackTrace();
@@ -68,20 +68,25 @@ public class Server {
 		pr.write(cl);
 	}
 
-	private void HandleMsg(SocketChannel cl, ISProtocol pr)
+	private void HandleMsg(SocketChannel cl, ISServerUser isUser, ISProtocol pr)
 		 throws IOException, IllegalArgumentException, Exception {
-		ISMsg msg;
 		try {
-			msg = pr.getMsg();
+			ISMsg msg = pr.getMsg();
 			String type = (String)msg.getData("type");
 			switch(type) {
 				case "echo":
-					pr.write(cl);
+					if(isUser.getState() == UserState.AUTHENTICATED) {
+						pr.write(cl);
+					} else {
+						SendErrorMsg(cl, pr, 150, "User is not authenticated");
+					}
 					break;
 				case "authenticate":
 					String user = (String)msg.getData("user");
 					String password = (String)msg.getData("password");
-					if(user_manager.isUserValid(user, password)) {
+					isUser.authenticate(user, password);
+					if(isUser.getState() == UserState.AUTHENTICATED) {
+						//Send ok MSG
 						pr.setMsg(new ISMsg());
 						pr.write(cl);
 					} else {
@@ -99,23 +104,26 @@ public class Server {
 
 	private void HandleRead(SelectionKey ky) {
 		SocketChannel cl = (SocketChannel)ky.channel();
-		ISProtocol pr = (ISProtocol)ky.attachment();
+		ISServerUser isUser = (ISServerUser)ky.attachment();
+		ISProtocol pr = isUser.getProtocol();
 
 		try {
 			ParseState state = pr.read(cl);
 			if(state == ParseState.READ_DONE) {
-				HandleMsg(cl, pr);
+				HandleMsg(cl, isUser, pr);
 			} else if (state == ParseState.READ_ERROR) {
 				SendErrorMsg(cl, pr, 102, "ParseState.READ_ERROR");
 				pr.reset();
 			}
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
+			isUser.disconnect();
 			CloseSelectableChannel(cl);
 		} catch (IllegalArgumentException ise) {
 			ise.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
+			isUser.disconnect();
 			CloseSelectableChannel(cl);
 		}
 	}
