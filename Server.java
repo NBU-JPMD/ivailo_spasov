@@ -75,7 +75,8 @@ public class Server {
 			String type = (String)msg.getData("type");
 			switch(type) {
 				case "echo":
-					if(isUser.getState() == UserState.AUTHENTICATED) {
+					if(isUser.getState() == UserState.AUTHENTICATED ||
+						 isUser.getState() == UserState.FILETRANSFER) {
 						pr.write(cl);
 					} else {
 						SendErrorMsg(cl, pr, 150, "User is not authenticated");
@@ -94,6 +95,38 @@ public class Server {
 						throw new Exception("authentication failure");
 					}
 					break;
+				case "file":
+					if(isUser.getState() == UserState.AUTHENTICATED) {
+						String filename = (String)msg.getData("filename");
+						int pieces = (int)msg.getData("pieces");
+						if(filename != null) {
+							System.out.println("new file " + filename + " pieces " + pieces);
+						} else {
+							System.out.println("filename is missing");
+						}
+						pr.setMsg(new ISMsg());
+						pr.write(cl);
+					} else {
+						SendErrorMsg(cl, pr, 151, "User is not authenticated");					}
+				case "piece":
+					if(isUser.getState() == UserState.FILETRANSFER) {
+						int piece = (int)msg.getData("piece");
+						System.out.println("new piece " + piece);
+						pr.setMsg(new ISMsg());
+						pr.write(cl);
+					} else {
+						SendErrorMsg(cl, pr, 300, "Wrong state");
+					}
+				case "list":
+					if(isUser.getState() == UserState.AUTHENTICATED) {
+						System.out.println("client wants file list");
+						pr.setMsg(new ISMsg());
+						pr.write(cl);
+					} else if (isUser.getState() == UserState.FILETRANSFER) {
+						SendErrorMsg(cl, pr, 301, "Wrong state");
+					} else {
+						SendErrorMsg(cl, pr, 153, "User is not authenticated");
+					}
 				default:
 					SendErrorMsg(cl, pr, 101, "Not implemented");
 			}
