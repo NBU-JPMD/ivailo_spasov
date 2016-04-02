@@ -170,9 +170,11 @@ public class Server {
 
 	public static void main(String [] args) {
 		Server srv = new Server();
+		UserManager userManager = UserManager.getInstance();
 
 		CommandHandler commandHandler = new CommandHandler();
 		commandHandler.registerCommand(new ServerCommand(srv));
+		commandHandler.registerCommand(new ServerUsersCommand(userManager));
 		commandHandler.start();
 
 		srv.stopServer();
