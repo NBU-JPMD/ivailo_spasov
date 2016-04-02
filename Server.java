@@ -22,9 +22,21 @@ class ChannelHealper {
 }
 
 public class Server {
+	private static final int defaultPort = 6969;
+
 	private boolean running = false;
-	private int port = 6969;
-	
+	private Thread recvThread = null;
+	private ServerSocketChannel server_socket_chanel = null;
+	private Selector selector = null;
+
+	public static int getDefaultPort() {
+		return defaultPort;
+	}
+
+	public boolean isRunning() {
+		return running;
+	}
+
 	private void HandleAccept(ServerSocketChannel ssc, Selector sel) {
 		SocketChannel client = null;
 		try {
@@ -37,7 +49,7 @@ public class Server {
 			CloseSelectableChannel(client);
 		}
 	}
-	
+
 	private void CloseSelectableChannel(SelectableChannel ch) {
 		try {
 			if(ch != null) {
@@ -47,7 +59,7 @@ public class Server {
 			ex.printStackTrace();
 		}
 	}
-	
+
 	private void CloseSelector(Selector sel) {
 		try {
 			if(sel != null) {
@@ -60,7 +72,7 @@ public class Server {
 			ex.printStackTrace();
 		}
 	}
-	
+
 	private void HandleRead(SocketChannel cl, ChannelHealper helper) {
 		try {
 			for(Object obj : helper.getReader().recv()) {
@@ -98,45 +110,71 @@ public class Server {
 		}
 	}
 	
-	public void Start(){
-		ServerSocketChannel server_socket_chanel = null;
-		Selector selector = null;
+	public synchronized void startServer(int port) throws IOException {
 		running = true;
-		System.out.println("Starting...");
-		try {
-			server_socket_chanel = ServerSocketChannel.open();
-			server_socket_chanel.socket().bind(new InetSocketAddress(port));
-			server_socket_chanel.configureBlocking(false);
-			
-			selector = Selector.open();
-			server_socket_chanel.register(selector, SelectionKey.OP_ACCEPT, null);
-			
-			while(running) {
-				if (selector.select() > 0) {
-					Set<SelectionKey> selectedKeys = selector.selectedKeys();
-					Iterator<SelectionKey> iter = selectedKeys.iterator();
-					while (iter.hasNext()) {
-						SelectionKey ky = iter.next();
-						if (ky.isAcceptable()) {
-							HandleAccept(server_socket_chanel, selector);
-						} else if (ky.isReadable()) {
-							HandleRead((SocketChannel)ky.channel(), (ChannelHealper)ky.attachment());
+		System.out.println("Starting at port " + port);
+
+		server_socket_chanel = ServerSocketChannel.open();
+		server_socket_chanel.socket().bind(new InetSocketAddress(port));
+		server_socket_chanel.configureBlocking(false);
+
+		selector = Selector.open();
+		server_socket_chanel.register(selector, SelectionKey.OP_ACCEPT, null);
+
+		recvThread = new Thread() {
+			public void run() {
+				try {
+					while(running) {
+						if (selector.select() > 0) {
+							Set<SelectionKey> selectedKeys = selector.selectedKeys();
+							Iterator<SelectionKey> iter = selectedKeys.iterator();
+							while (iter.hasNext()) {
+								SelectionKey ky = iter.next();
+								if (ky.isAcceptable()) {
+									HandleAccept(server_socket_chanel, selector);
+								} else if (ky.isReadable()) {
+									HandleRead((SocketChannel)ky.channel(), (ChannelHealper)ky.attachment());
+								}
+								iter.remove();
+							}
 						}
-						iter.remove();
 					}
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				} finally {
+					CloseSelectableChannel(server_socket_chanel);
+					CloseSelector(selector);
+					selector = null;
+					server_socket_chanel = null;
+					running = false;
 				}
 			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
+		};
+		recvThread.start();
+	}
+
+	public synchronized void stopServer() {
+		running = false;
+		if(selector != null) {
+			selector.wakeup();
+		}
+		try {
+			if(recvThread != null) {
+				recvThread.join();
+			}
+		} catch (InterruptedException e) {
 		} finally {
-			CloseSelectableChannel(server_socket_chanel);
-			CloseSelector(selector);
-			running = false;
+			recvThread = null;
 		}
 	}
-	
+
 	public static void main(String [] args) {
 		Server srv = new Server();
-		srv.Start();
+
+		CommandHandler commandHandler = new CommandHandler();
+		commandHandler.registerCommand(new ServerCommand(srv));
+		commandHandler.start();
+
+		srv.stopServer();
 	}
 }
