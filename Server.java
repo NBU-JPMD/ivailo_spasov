@@ -4,30 +4,16 @@ import java.util.*;
 import java.net.*;
 import java.io.*;
 
-class ChannelHealper {
-	private ChannelReader channelReader = null;
-	private ChannelWriter channelWriter = null;
-	public ChannelHealper(SocketChannel client) {
-		channelReader = new ChannelReader(client);
-		channelWriter = new ChannelWriter(client);
-	}
-
-	public ChannelReader getReader() {
-		return channelReader;
-	}
-
-	public ChannelWriter getWriter() {
-		return channelWriter;
-	}
-}
-
 public class Server {
 	private static final int defaultPort = 6969;
 
 	private boolean running = false;
+	private static UserManager userManager = UserManager.getInstance();
 	private Thread recvThread = null;
 	private ServerSocketChannel server_socket_chanel = null;
 	private Selector selector = null;
+	private ProtocolHandler protocolHandler = null;
+	private HashMap<ChannelHelper, String> users = null;
 
 	public static int getDefaultPort() {
 		return defaultPort;
@@ -42,7 +28,7 @@ public class Server {
 		try {
 			client = ssc.accept();
 			client.configureBlocking(false);
-			client.register(sel, SelectionKey.OP_READ, new ChannelHealper(client));
+			client.register(sel, SelectionKey.OP_READ, new ChannelHelper(client));
 			System.out.println("NEW CLIENT " + client.getRemoteAddress());
 		} catch (IOException ex) {
 			ex.printStackTrace();
@@ -73,29 +59,13 @@ public class Server {
 		}
 	}
 
-	private void HandleRead(SocketChannel cl, ChannelHealper helper) {
+	private void HandleRead(SocketChannel cl, ChannelHelper helper) {
 		try {
 			for(Object obj : helper.getReader().recv()) {
 				ISMsg msg = (ISMsg)obj;
 				String type = (String)msg.getData("type");
 				if(type != null) {
-					switch(type) {
-						case "echo":
-							helper.getWriter().write(msg);
-							break;
-						case "authenticate":
-							msg = new ISMsg();
-							msg.addKey("type", "authenticated");
-							helper.getWriter().write(msg);
-							break;
-						default:
-							msg = new ISMsg();
-							msg.setRespCode(101);
-							msg.addKey("type", "error");
-							msg.addKey("msg", "Unsupported message type.");
-							helper.getWriter().write(msg);
-							break;
-					}
+					protocolHandler.handleMsg(type, msg, helper);
 				} else {
 					msg = new ISMsg();
 					msg.setRespCode(102);
@@ -107,6 +77,8 @@ public class Server {
 		} catch (IOException ex) {
 			ex.printStackTrace();
 			CloseSelectableChannel(cl);
+			userManager.disconnectUser(users.get(helper));
+			users.remove(helper);
 		}
 	}
 	
@@ -121,6 +93,13 @@ public class Server {
 		selector = Selector.open();
 		server_socket_chanel.register(selector, SelectionKey.OP_ACCEPT, null);
 
+		users = new HashMap<>();
+
+		protocolHandler = new ProtocolHandler();
+		protocolHandler.registerCommand(new EchoCmd());
+		protocolHandler.registerCommand(new AuthCmd(users));
+		protocolHandler.registerCommand(new ListCmd(users));
+
 		recvThread = new Thread() {
 			public void run() {
 				try {
@@ -133,7 +112,7 @@ public class Server {
 								if (ky.isAcceptable()) {
 									HandleAccept(server_socket_chanel, selector);
 								} else if (ky.isReadable()) {
-									HandleRead((SocketChannel)ky.channel(), (ChannelHealper)ky.attachment());
+									HandleRead((SocketChannel)ky.channel(), (ChannelHelper)ky.attachment());
 								}
 								iter.remove();
 							}
@@ -170,7 +149,6 @@ public class Server {
 
 	public static void main(String [] args) {
 		Server srv = new Server();
-		UserManager userManager = UserManager.getInstance();
 
 		CommandHandler commandHandler = new CommandHandler();
 		commandHandler.registerCommand(new ServerCommand(srv));

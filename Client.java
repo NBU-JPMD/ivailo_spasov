@@ -8,9 +8,9 @@ public class Client {
 	private final static int remotePort = 6969;
 
 	private SocketChannel socketChannel = null;
-	private ChannelWriter channelWriter = null;
-	private ChannelReader channelReader = null;
+	private ChannelHelper helper = null;
 	private Thread recvThread = null;
+	private ProtocolHandler protocolHandler = null;
 
 	public static String getDefaultHost() {
 		return remoteHost;
@@ -37,13 +37,25 @@ public class Client {
 	public synchronized void startClient(String host, int port) throws IOException {
 		socketChannel = SocketChannel.open();
 		socketChannel.connect(new InetSocketAddress(host, port));
-		channelWriter = new ChannelWriter(socketChannel);
-		channelReader = new ChannelReader(socketChannel);
+		helper = new ChannelHelper(socketChannel);
+		protocolHandler = new ProtocolHandler();
+		protocolHandler.registerCommand(new EchoCmd());
+		protocolHandler.registerCommand(new AuthRspCmd());
+		protocolHandler.registerCommand(new ListRspCmd());
+
 		recvThread = new Thread() {
 			public void run() {
 				while(true) {
 					try {
-						System.out.println(channelReader.recv());
+						for(Object obj : helper.getReader().recv()) {
+							ISMsg msg = (ISMsg)obj;
+							String type = (String)msg.getData("type");
+							if(type != null) {
+								if(protocolHandler != null) {
+									protocolHandler.handleMsg(type, msg, helper);
+								}
+							}
+						}
 					} catch (ClosedByInterruptException cie) {
 						break;
 					} catch (IOException e) {
@@ -71,12 +83,12 @@ public class Client {
 			closeSelectableChannel(socketChannel);
 			socketChannel = null;
 		}
-		channelWriter = null;
-		channelReader = null;
+		helper = null;
+		protocolHandler = null;
 	}
 
 	public void write(Object obj) throws IOException {
-		channelWriter.write(obj);
+		helper.getWriter().write(obj);
 	}
 
 	public static void main(String [] args) {
@@ -86,6 +98,7 @@ public class Client {
 		commandHandler.registerCommand(new ClientCommand(cl));
 		commandHandler.registerCommand(new ClientEchoCommand(cl));
 		commandHandler.registerCommand(new ClientAuthCommand(cl));
+		commandHandler.registerCommand(new ClientListCommand(cl));
 		commandHandler.start();
 
 		cl.stopClient();
