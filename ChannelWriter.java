@@ -6,7 +6,7 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
 public class ChannelWriter {
-	private final static int bufferSize = 1024;
+	private final static int bufferSize = 8 * 1024;
 	private final static int headerSize = 4;
 
 	private ByteBuffer clientBuffer = ByteBuffer.allocate(bufferSize);
@@ -16,7 +16,7 @@ public class ChannelWriter {
 		this.socketChannel = socketChannel;
 	}
 
-	public void write(Object obj) throws IOException {
+	public synchronized void write(Object obj) throws IOException {
 		clientBuffer.clear();
 		clientBuffer.position(headerSize);
 
@@ -29,7 +29,7 @@ public class ChannelWriter {
 		socketChannel.write(clientBuffer);
 	}
 
-	public void write(ArrayList<Object> arrayList) throws IOException {
+	public synchronized void write(ArrayList<Object> arrayList) throws IOException {
 		for(Object obj : arrayList) {
 			write(obj);
 		}

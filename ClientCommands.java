@@ -2,6 +2,7 @@ import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.channels.UnresolvedAddressException;
+import java.io.File;
 
 class ClientCommand implements ICommand {
 	private Client client;
@@ -189,5 +190,50 @@ class ClientListCommand implements ICommand {
 
 	public String getCommandDescription(String cmd) {
 		return "List server files.";
+	}
+}
+
+class ClientUploadCommand implements ICommand {
+	private Client client;
+
+	public ClientUploadCommand(Client client) {
+		this.client = client;
+	}
+
+	public boolean onCommand(String... args) throws ExitException {
+		if(client.isRunning()) {
+			SendFile sendFIle  = client.getSendFile();
+			if(sendFIle == null) {
+				try {
+					if (args.length > 1) {
+						sendFIle = new SendFile(args[1]);
+					} else {
+						BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+						System.out.println("Enter file path:");
+						String file = br.readLine();
+						sendFIle = new SendFile(file);
+					}
+					ISMsg msg = sendFIle.getUploadMsg();
+					client.write(msg);
+					client.setSendFile(sendFIle);
+					System.out.println("sending file...");
+				} catch (IOException ioe) {
+					ioe.printStackTrace();
+				}
+			} else {
+				System.out.println("File transfer is already running.");
+			}
+		} else {
+			System.out.println("Client is not running.");
+		}
+		return false;
+	}
+
+	public String[] getFilters() {
+		return new String[]{"upload"};
+	}
+
+	public String getCommandDescription(String cmd) {
+		return "Upload file to the server.";
 	}
 }

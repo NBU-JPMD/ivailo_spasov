@@ -3,6 +3,37 @@ import java.nio.channels.*;
 import java.util.*;
 import java.net.*;
 import java.io.*;
+import java.nio.file.*;
+
+class UserState {
+	private String user = null;
+	private ChannelHelper helper = null;
+	private ReceiveFile receiveFile = null;
+
+	public UserState(ChannelHelper helper) {
+		this.helper = helper;
+	}
+
+	public String getUser() {
+		return user;
+	}
+
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	public ChannelHelper getChannelHelper() {
+		return helper;
+	}
+
+	public void setReceiveFile(ReceiveFile receiveFile) {
+		this.receiveFile = receiveFile;
+	}
+
+	public ReceiveFile getReceiveFile() {
+		return receiveFile;
+	}
+}
 
 public class Server {
 	private static final int defaultPort = 6969;
@@ -13,7 +44,6 @@ public class Server {
 	private ServerSocketChannel server_socket_chanel = null;
 	private Selector selector = null;
 	private ProtocolHandler protocolHandler = null;
-	private HashMap<ChannelHelper, String> users = null;
 
 	public static int getDefaultPort() {
 		return defaultPort;
@@ -28,7 +58,7 @@ public class Server {
 		try {
 			client = ssc.accept();
 			client.configureBlocking(false);
-			client.register(sel, SelectionKey.OP_READ, new ChannelHelper(client));
+			client.register(sel, SelectionKey.OP_READ, new UserState(new ChannelHelper(client)));
 			System.out.println("NEW CLIENT " + client.getRemoteAddress());
 		} catch (IOException ex) {
 			ex.printStackTrace();
@@ -59,26 +89,38 @@ public class Server {
 		}
 	}
 
-	private void HandleRead(SocketChannel cl, ChannelHelper helper) {
+	private void HandleRead(SocketChannel cl, UserState userState) {
 		try {
-			for(Object obj : helper.getReader().recv()) {
-				ISMsg msg = (ISMsg)obj;
-				String type = (String)msg.getData("type");
-				if(type != null) {
-					protocolHandler.handleMsg(type, msg, helper);
-				} else {
-					msg = new ISMsg();
-					msg.setRespCode(102);
-					msg.addKey("type", "error");
-					msg.addKey("msg", "Type is missing.");
-					helper.getWriter().write(msg);
+			ChannelHelper helper = userState.getChannelHelper();
+			ChannelReader reader = helper.getReader();
+			ArrayList<Object> objList = reader.recv();
+			if(objList != null) {
+				for(Object obj : objList) {
+					ISMsg msg = (ISMsg)obj;
+					String type = (String)msg.getData("type");
+					if(type != null) {
+						protocolHandler.handleMsg(type, msg, helper, userState);
+					} else {
+						msg = new ISMsg();
+						msg.setRespCode(102);
+						msg.addKey("type", "error");
+						msg.addKey("msg", "Type is missing.");
+						helper.getWriter().write(msg);
+					}
 				}
 			}
 		} catch (IOException ex) {
 			ex.printStackTrace();
 			CloseSelectableChannel(cl);
-			userManager.disconnectUser(users.get(helper));
-			users.remove(helper);
+			synchronized (userState) {
+				userManager.disconnectUser(userState.getUser());
+				ReceiveFile receiveFile = userState.getReceiveFile();
+				if(receiveFile != null) {
+					receiveFile.close();
+					receiveFile.deleteFile();
+					receiveFile = null;
+				}
+			}
 		}
 	}
 	
@@ -93,12 +135,12 @@ public class Server {
 		selector = Selector.open();
 		server_socket_chanel.register(selector, SelectionKey.OP_ACCEPT, null);
 
-		users = new HashMap<>();
-
-		protocolHandler = new ProtocolHandler();
+		protocolHandler = new ProtocolHandler(100);
 		protocolHandler.registerCommand(new EchoCmd());
-		protocolHandler.registerCommand(new AuthCmd(users));
-		protocolHandler.registerCommand(new ListCmd(users));
+		protocolHandler.registerCommand(new AuthCmd());
+		protocolHandler.registerCommand(new ListCmd());
+		protocolHandler.registerCommand(new UploadCmd());
+		protocolHandler.registerCommand(new PieceCmd());
 
 		recvThread = new Thread() {
 			public void run() {
@@ -112,7 +154,7 @@ public class Server {
 								if (ky.isAcceptable()) {
 									HandleAccept(server_socket_chanel, selector);
 								} else if (ky.isReadable()) {
-									HandleRead((SocketChannel)ky.channel(), (ChannelHelper)ky.attachment());
+									HandleRead((SocketChannel)ky.channel(), (UserState)ky.attachment());
 								}
 								iter.remove();
 							}
@@ -144,6 +186,10 @@ public class Server {
 		} catch (InterruptedException e) {
 		} finally {
 			recvThread = null;
+		}
+		if(protocolHandler != null) {
+			protocolHandler.shutdown();
+			protocolHandler = null;
 		}
 	}
 

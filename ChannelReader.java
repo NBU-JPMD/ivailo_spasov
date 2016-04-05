@@ -6,7 +6,7 @@ import java.io.ObjectInputStream;
 import java.util.ArrayList;
 
 public class ChannelReader {
-	private final static int bufferSize = 1024;
+	private final static int bufferSize = 8 * 1024;
 	private final static int headerSize = 4;
 
 	private ByteBuffer clientBuffer = ByteBuffer.allocate(bufferSize);
@@ -17,7 +17,7 @@ public class ChannelReader {
 		this.socketChannel = socketChannel;
 	}
 
-	public ArrayList<Object> recv() throws IOException {
+	public synchronized ArrayList<Object> recv() throws IOException {
 		if(socketChannel.read(clientBuffer) == -1) {
 			throw new IOException("Connection closed");
 		}

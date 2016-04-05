@@ -20,7 +20,7 @@ public class UserManager implements Serializable {
 	protected UserManager() {
 	}
 
-	public static UserManager getInstance() {
+	public synchronized static UserManager getInstance() {
 		if(instance == null) {
 			try (FileInputStream fin = new FileInputStream(user_file);
 				ObjectInputStream ois = new ObjectInputStream(fin)) {
@@ -35,15 +35,15 @@ public class UserManager implements Serializable {
 		return instance;
 	}
 
-	public void addUser(String user, String password) {
+	public synchronized void addUser(String user, String password) {
 		users.put(user, password);
 	}
 
-	public void delUser(String user) {
+	public synchronized void delUser(String user) {
 		users.remove(user);
 	}
 
-	public boolean connectUser(String user) {
+	public synchronized boolean connectUser(String user) {
 		if(users.get(user) != null && !connected_users.contains(user)) {
 			connected_users.add(user);
 			return true;
@@ -51,13 +51,13 @@ public class UserManager implements Serializable {
 		return false;
 	}
 
-	public void disconnectUser(String user) {
+	public synchronized void disconnectUser(String user) {
 		if(user != null) {
 			connected_users.remove(user);
 		}
 	}
 
-	public boolean isUserValid(String user, String password) {
+	public synchronized boolean isUserValid(String user, String password) {
 		String ck_password = users.get(user);
 		if(ck_password != null && ck_password.equals(password)) {
 			return true;
@@ -65,7 +65,7 @@ public class UserManager implements Serializable {
 		return false;
 	}
 
-	public String toString() {
+	public synchronized String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("users:");
 		for (Map.Entry<String, String> entry : users.entrySet()) {
@@ -77,7 +77,7 @@ public class UserManager implements Serializable {
 		return sb.toString();
 	}
 
-	public void save() {
+	public synchronized void save() {
 		try (FileOutputStream fin = new FileOutputStream(user_file);
 			ObjectOutputStream ois = new ObjectOutputStream(fin)) {
 			ois.writeObject(this);

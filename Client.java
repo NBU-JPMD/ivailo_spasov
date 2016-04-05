@@ -11,6 +11,15 @@ public class Client {
 	private ChannelHelper helper = null;
 	private Thread recvThread = null;
 	private ProtocolHandler protocolHandler = null;
+	private SendFile sendFile;
+
+	public SendFile getSendFile() {
+		return sendFile;
+	}
+
+	public void setSendFile(SendFile sendFile) {
+		this.sendFile = sendFile;
+	}
 
 	public static String getDefaultHost() {
 		return remoteHost;
@@ -38,10 +47,11 @@ public class Client {
 		socketChannel = SocketChannel.open();
 		socketChannel.connect(new InetSocketAddress(host, port));
 		helper = new ChannelHelper(socketChannel);
-		protocolHandler = new ProtocolHandler();
+		protocolHandler = new ProtocolHandler(1);
 		protocolHandler.registerCommand(new EchoCmd());
 		protocolHandler.registerCommand(new AuthRspCmd());
 		protocolHandler.registerCommand(new ListRspCmd());
+		protocolHandler.registerCommand(new UploadRspCmd(this));
 
 		recvThread = new Thread() {
 			public void run() {
@@ -50,9 +60,10 @@ public class Client {
 						for(Object obj : helper.getReader().recv()) {
 							ISMsg msg = (ISMsg)obj;
 							String type = (String)msg.getData("type");
+							//System.out.println(msg);
 							if(type != null) {
 								if(protocolHandler != null) {
-									protocolHandler.handleMsg(type, msg, helper);
+									protocolHandler.handleMsg(type, msg, helper, null);
 								}
 							}
 						}
@@ -84,7 +95,10 @@ public class Client {
 			socketChannel = null;
 		}
 		helper = null;
-		protocolHandler = null;
+		if(protocolHandler != null) {
+			protocolHandler.shutdown();
+			protocolHandler = null;
+		}
 	}
 
 	public void write(Object obj) throws IOException {
@@ -99,6 +113,7 @@ public class Client {
 		commandHandler.registerCommand(new ClientEchoCommand(cl));
 		commandHandler.registerCommand(new ClientAuthCommand(cl));
 		commandHandler.registerCommand(new ClientListCommand(cl));
+		commandHandler.registerCommand(new ClientUploadCommand(cl));
 		commandHandler.start();
 
 		cl.stopClient();
