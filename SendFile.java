@@ -12,8 +12,17 @@ public class SendFile {
 	private InputStream in;
 	private String fileName;
 	private long length;
+	private String uploadType;
 
 	public SendFile(String fileName) throws IOException {
+		CreateFile(fileName, "upload");
+	}
+
+	public SendFile(String fileName, String uploadType) throws IOException {
+		CreateFile(fileName, uploadType);
+	}
+
+	private void CreateFile(String fileName, String uploadType) throws IOException {
 		File inFile = new File(fileName);
 		if(!inFile.exists() || inFile.isDirectory()) { 
 			throw new IOException("missing file");
@@ -25,11 +34,12 @@ public class SendFile {
 
 		in = new FileInputStream(fileName);
 		this.fileName = inFile.getName();
+		this.uploadType = uploadType;
 	}
 
 	public ISMsg getUploadMsg() {
 		ISMsg msg = new ISMsg();
-		msg.addKey("type", "upload");
+		msg.addKey("type", uploadType);
 		msg.addKey("file", fileName);
 		msg.addKey("pieces", pieces);
 		return msg;

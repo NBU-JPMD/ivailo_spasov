@@ -6,14 +6,13 @@ import java.nio.file.FileAlreadyExistsException;
 import java.lang.IllegalArgumentException;
 
 public class ReceiveFile {
-	public static final String uploadDir  = "upload/";
-
 	private long pieces;
 	private long currentPiece;
 	private String fileName;
 	private OutputStream out;
+	private String uploadDir;
 
-	private static void checkUploadDir() {
+	private void checkUploadDir() {
 		File folder = new File(uploadDir);
 		if(!folder.exists() || !folder.isDirectory()) {
 			folder.mkdirs();
@@ -21,15 +20,28 @@ public class ReceiveFile {
 	}
 
 	public ReceiveFile(String fileName, long pieces) throws IOException, IllegalArgumentException, FileAlreadyExistsException {
+		CreateFile(fileName, pieces, "upload/", false);
+	}
+
+	public ReceiveFile(String fileName, long pieces, String uploadDir) throws IOException, IllegalArgumentException, FileAlreadyExistsException {
+		CreateFile(fileName, pieces, uploadDir, true);
+	}
+
+	private void CreateFile(String fileName, long pieces, String uploadDir, boolean del) throws IOException, IllegalArgumentException, FileAlreadyExistsException {
+		this.uploadDir = uploadDir;
 		checkUploadDir();
 		this.fileName = fileName;
 		this.pieces = pieces;
-		if (fileName == null || pieces < 0) {
+		if (fileName == null || pieces < 0 || uploadDir == null) {
 			throw new IllegalArgumentException("wrong parameters");
 		}
 		File saveFile = new File(uploadDir + fileName);
 		if (saveFile.exists()) {
-			throw new FileAlreadyExistsException("file already exist");
+			if(del) {
+				deleteFile();
+			} else {
+				throw new FileAlreadyExistsException("file already exist");
+			}
 		}
 		out = new FileOutputStream(saveFile);
 		currentPiece = 1;
@@ -61,5 +73,9 @@ public class ReceiveFile {
 	public void deleteFile() {
 		File saveFile = new File(uploadDir + fileName);
 		saveFile.delete();
+	}
+
+	public void setPieces(long pieces) {
+		this.pieces = pieces;
 	}
 }

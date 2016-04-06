@@ -9,6 +9,7 @@ class UserState {
 	private String user = null;
 	private ChannelHelper helper = null;
 	private ReceiveFile receiveFile = null;
+	private SendFile sendFile = null;
 
 	public UserState(ChannelHelper helper) {
 		this.helper = helper;
@@ -32,6 +33,14 @@ class UserState {
 
 	public ReceiveFile getReceiveFile() {
 		return receiveFile;
+	}
+
+	public void setSendFile(SendFile sendFile) {
+		this.sendFile = sendFile;
+	}
+
+	public SendFile getSendFile() {
+		return sendFile;
 	}
 }
 
@@ -120,6 +129,11 @@ public class Server {
 					receiveFile.deleteFile();
 					receiveFile = null;
 				}
+				SendFile sendFile = userState.getSendFile();
+				if(sendFile != null) {
+					sendFile.close();
+					sendFile = null;
+				}
 			}
 		}
 	}
@@ -141,6 +155,8 @@ public class Server {
 		protocolHandler.registerCommand(new ListCmd());
 		protocolHandler.registerCommand(new UploadCmd());
 		protocolHandler.registerCommand(new PieceCmd());
+		protocolHandler.registerCommand(new DownloadCmd());
+		protocolHandler.registerCommand(new ReqPieceCmd());
 
 		recvThread = new Thread() {
 			public void run() {

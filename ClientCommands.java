@@ -237,3 +237,52 @@ class ClientUploadCommand implements ICommand {
 		return "Upload file to the server.";
 	}
 }
+
+class ClientDownloadCommand implements ICommand {
+	private Client client;
+
+	public ClientDownloadCommand(Client client) {
+		this.client = client;
+	}
+
+	public boolean onCommand(String... args) throws ExitException {
+		if(client.isRunning()) {
+			ReceiveFile receiveFile  = client.getReceiveFile();
+			if(receiveFile == null) {
+				try {
+					String file;
+					if (args.length > 1) {
+						file = args[1];
+					} else {
+						BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+						System.out.println("Enter file name:");
+						file = br.readLine();
+					}
+					receiveFile = new ReceiveFile(file, 0, "download/");
+					ISMsg msg = new ISMsg();
+					msg.addKey("type", "download");
+					msg.addKey("file", file);
+
+					client.setReceiveFile(receiveFile);
+					client.write(msg);
+					System.out.println("Receive file...");
+				} catch (IOException ioe) {
+					ioe.printStackTrace();
+				}
+			} else {
+				System.out.println("File transfer is already running.");
+			}
+		} else {
+			System.out.println("Client is not running.");
+		}
+		return false;
+	}
+
+	public String[] getFilters() {
+		return new String[]{"download"};
+	}
+
+	public String getCommandDescription(String cmd) {
+		return "Dowload file from the server.";
+	}
+}

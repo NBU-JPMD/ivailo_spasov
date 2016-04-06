@@ -297,3 +297,207 @@ class PieceCmd implements IProtocolCmd {
 		return new String[]{"piece"};
 	}
 }
+
+class DownloadCmd implements IProtocolCmd {
+	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+		UserState userState  = (UserState)data;
+		String user;
+
+		synchronized (userState) {
+			user = userState.getUser();
+			if(user != null) {
+				SendFile sendFile = userState.getSendFile();
+				if (sendFile != null) {
+					msg = new ISMsg();
+					msg.addKey("type", "downloadRsp");
+					msg.addKey("msg", "file transfer is in progress");
+					msg.setRespCode(501);
+					helper.getWriter().write(msg);
+					return false;
+				}
+				String file = null;
+				try {
+					file = (String)msg.getData("file");
+				} catch (Exception e) {
+				}
+				try {
+					sendFile = new SendFile("upload/" + file, "downloadRsp");
+					userState.setSendFile(sendFile);
+					msg = sendFile.getUploadMsg();
+				} catch (IOException ioe) {
+					msg = new ISMsg();
+					msg.addKey("type", "downloadRsp");
+					msg.addKey("msg", "missing file");
+					msg.setRespCode(502);
+				}
+			} else {
+				msg = new ISMsg();
+				msg.addKey("type", "downloadRsp");
+				msg.addKey("msg", "user is not authenticated");
+				msg.setRespCode(503);
+			}
+		}
+		helper.getWriter().write(msg);
+		return false;
+	}
+
+	public String[] getFilters() {
+		return new String[]{"download"};
+	}
+}
+
+class DownloadRspCmd implements IProtocolCmd {
+	private Client client;
+
+	public DownloadRspCmd(Client client) {
+		this.client = client;
+	}
+
+	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+		ReceiveFile receiveFile = client.getReceiveFile();
+		if(msg.getRespCode() == 0) {
+			if(receiveFile != null) {
+				long pieces = -1;
+				try {
+					pieces = (long)msg.getData("pieces");
+				}catch (Exception e) {
+				}
+				msg = new ISMsg();
+				msg.addKey("type", "reqPiece");
+				if(pieces < 0) {
+					receiveFile.close();
+					receiveFile.deleteFile();
+					client.setReceiveFile(null);
+					msg.setRespCode(600);
+					System.out.println("Unable to receive file, wrong pieces count.");
+					return false;
+				}
+				receiveFile.setPieces(pieces);
+				helper.getWriter().write(msg);
+			}
+		} else {
+			if(receiveFile != null) {
+				receiveFile.close();
+				receiveFile.deleteFile();
+				client.setReceiveFile(null);
+			}
+			System.out.println(msg);
+		}
+		return false;
+	}
+
+	public String[] getFilters() {
+		return new String[]{"downloadRsp"};
+	}
+}
+
+class ReqPieceCmd implements IProtocolCmd {
+	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+		UserState userState  = (UserState)data;
+		String user;
+
+		synchronized (userState) {
+			user = userState.getUser();
+			SendFile sendFile = userState.getSendFile();
+			if(user != null) {
+				if (sendFile == null) {
+					msg = new ISMsg();
+					msg.addKey("type", "piece");
+					msg.addKey("msg", "no file transfer is in progress");
+					msg.setRespCode(601);
+					helper.getWriter().write(msg);
+					return false;
+				}
+				if(msg.getRespCode() == 0) {
+					msg = sendFile.getNextMsg();
+					if(sendFile.isFileSend()) {
+						sendFile.close();
+						userState.setSendFile(null);
+					}
+				} else {
+					sendFile.close();
+					userState.setSendFile(null);
+					return false;
+				}
+			} else {
+				msg = new ISMsg();
+				msg.addKey("type", "piece");
+				msg.addKey("msg", "user is not authenticated");
+				msg.setRespCode(603);
+				if(sendFile != null) {
+					sendFile.close();
+					userState.setSendFile(null);
+				}
+			}
+		}
+		helper.getWriter().write(msg);
+		return false;
+	}
+
+	public String[] getFilters() {
+		return new String[]{"reqPiece"};
+	}
+}
+
+class ClientPieceCmd implements IProtocolCmd {
+	private Client client;
+
+	public ClientPieceCmd(Client client) {
+		this.client = client;
+	}
+
+	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+		ReceiveFile receiveFile = client.getReceiveFile();
+		if(msg.getRespCode() == 0) {
+			if(receiveFile != null) {
+				long piece = 0;
+				byte[] byteData = null;
+				try {
+					piece = (long)msg.getData("piece");
+					byteData = (byte[])msg.getData("data");
+				} catch (Exception e) {
+				}
+				try {
+					receiveFile.write(byteData, piece);
+
+					if(receiveFile.isFileReceived()) {
+						receiveFile.close();
+						client.setReceiveFile(null);
+						System.out.println("Receive file done");
+						return false;
+					}
+					msg = new ISMsg();
+					msg.addKey("type", "reqPiece");
+				} catch (IllegalArgumentException iae) {
+					msg = new ISMsg();
+					msg.addKey("type", "reqPiece");
+					msg.addKey("msg", "wrong piece number");
+					msg.setRespCode(701);
+				} catch (IOException ioe) {
+					msg = new ISMsg();
+					msg.addKey("type", "reqPiece");
+					msg.addKey("msg", "write file exception");
+					msg.setRespCode(702);
+				}
+			} else {
+				msg = new ISMsg();
+				msg.addKey("type", "reqPiece");
+				msg.addKey("msg", "file transfer is not in progress");
+				msg.setRespCode(703);
+			}
+		} else {
+			if(receiveFile != null) {
+				receiveFile.close();
+				receiveFile.deleteFile();
+				client.setReceiveFile(null);
+			}
+			System.out.println(msg);
+		}
+		helper.getWriter().write(msg);
+		return false;
+	}
+
+	public String[] getFilters() {
+		return new String[]{"piece"};
+	}
+}

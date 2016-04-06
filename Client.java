@@ -12,6 +12,7 @@ public class Client {
 	private Thread recvThread = null;
 	private ProtocolHandler protocolHandler = null;
 	private SendFile sendFile;
+	private ReceiveFile receiveFile;
 
 	public SendFile getSendFile() {
 		return sendFile;
@@ -19,6 +20,14 @@ public class Client {
 
 	public void setSendFile(SendFile sendFile) {
 		this.sendFile = sendFile;
+	}
+
+	public ReceiveFile getReceiveFile() {
+		return receiveFile;
+	}
+
+	public void setReceiveFile(ReceiveFile receiveFile) {
+		this.receiveFile = receiveFile;
 	}
 
 	public static String getDefaultHost() {
@@ -52,6 +61,8 @@ public class Client {
 		protocolHandler.registerCommand(new AuthRspCmd());
 		protocolHandler.registerCommand(new ListRspCmd());
 		protocolHandler.registerCommand(new UploadRspCmd(this));
+		protocolHandler.registerCommand(new DownloadRspCmd(this));
+		protocolHandler.registerCommand(new ClientPieceCmd(this));
 
 		recvThread = new Thread() {
 			public void run() {
@@ -60,7 +71,6 @@ public class Client {
 						for(Object obj : helper.getReader().recv()) {
 							ISMsg msg = (ISMsg)obj;
 							String type = (String)msg.getData("type");
-							//System.out.println(msg);
 							if(type != null) {
 								if(protocolHandler != null) {
 									protocolHandler.handleMsg(type, msg, helper, null);
@@ -114,6 +124,7 @@ public class Client {
 		commandHandler.registerCommand(new ClientAuthCommand(cl));
 		commandHandler.registerCommand(new ClientListCommand(cl));
 		commandHandler.registerCommand(new ClientUploadCommand(cl));
+		commandHandler.registerCommand(new ClientDownloadCommand(cl));
 		commandHandler.start();
 
 		cl.stopClient();
