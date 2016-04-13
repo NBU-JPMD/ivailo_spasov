@@ -11,6 +11,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.nio.charset.StandardCharsets;
 
 public class UserManager implements Serializable {
 	private static UserManager instance = null;
@@ -20,6 +23,23 @@ public class UserManager implements Serializable {
 	static final long serialVersionUID = 69;
 
 	protected UserManager() {
+	}
+
+	private static String bytesToHex(byte[] in) {
+		final StringBuilder builder = new StringBuilder();
+		for(byte b : in) {
+			builder.append(String.format("%02x", b));
+		}
+		return builder.toString();
+	}
+
+	private static String getHashString(String str) {
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			return bytesToHex(digest.digest(str.getBytes(StandardCharsets.UTF_8)));
+		} catch (NoSuchAlgorithmException e) {
+			return str;
+		}
 	}
 
 	public synchronized static UserManager getInstance() {
@@ -38,7 +58,7 @@ public class UserManager implements Serializable {
 	}
 
 	public synchronized void addUser(String user, String password) {
-		users.put(user, password);
+		users.put(user, getHashString(password));
 	}
 
 	public synchronized void delUser(String user) {
@@ -61,7 +81,7 @@ public class UserManager implements Serializable {
 
 	public synchronized boolean isUserValid(String user, String password) {
 		String ck_password = users.get(user);
-		if(ck_password != null && ck_password.equals(password)) {
+		if(ck_password != null && ck_password.equals(getHashString(password))) {
 			return true;
 		}
 		return false;
