@@ -1,3 +1,12 @@
+package com.ispasov.nbujpmd.client;
+
+import com.ispasov.nbujpmd.common.command.ICommand;
+import com.ispasov.nbujpmd.common.command.ExitException;
+import com.ispasov.nbujpmd.common.protocol.ISMsg;
+import com.ispasov.nbujpmd.common.SendFile;
+import com.ispasov.nbujpmd.common.ReceiveFile;
+import com.ispasov.nbujpmd.common.UserState;
+
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -105,7 +114,7 @@ class ClientAuthCommand implements ICommand {
 				msg.addKey("type", "authenticate");
 				msg.addKey("user", user);
 				msg.addKey("password", password);
-				client.write(msg);
+				client.getUserState().getChannelHelper().getWriter().write(msg);
 			} else {
 				System.out.println("Client is not running.");
 			}
@@ -141,7 +150,7 @@ class ClientEchoCommand implements ICommand {
 				msg.addKey("random", (int)(Math.random()*1000)%1000);
 			}
 			try {
-				client.write(msg);
+				client.getUserState().getChannelHelper().getWriter().write(msg);
 			} catch (IOException ioe) {
 				ioe.printStackTrace();
 				client.stopClient();
@@ -173,7 +182,7 @@ class ClientListCommand implements ICommand {
 			ISMsg msg = new ISMsg();
 			msg.addKey("type", "list");
 			try {
-				client.write(msg);
+				client.getUserState().getChannelHelper().getWriter().write(msg);
 			} catch (IOException ioe) {
 				ioe.printStackTrace();
 				client.stopClient();
@@ -202,7 +211,8 @@ class ClientUploadCommand implements ICommand {
 
 	public boolean onCommand(String... args) throws ExitException {
 		if(client.isRunning()) {
-			SendFile sendFIle  = client.getSendFile();
+			UserState userState = client.getUserState();
+			SendFile sendFIle  = userState.getSendFile();
 			if(sendFIle == null) {
 				try {
 					if (args.length > 1) {
@@ -214,8 +224,8 @@ class ClientUploadCommand implements ICommand {
 						sendFIle = new SendFile(file);
 					}
 					ISMsg msg = sendFIle.getUploadMsg();
-					client.write(msg);
-					client.setSendFile(sendFIle);
+					client.getUserState().getChannelHelper().getWriter().write(msg);
+					userState.setSendFile(sendFIle);
 					System.out.println("sending file...");
 				} catch (IOException ioe) {
 					ioe.printStackTrace();
@@ -247,7 +257,8 @@ class ClientDownloadCommand implements ICommand {
 
 	public boolean onCommand(String... args) throws ExitException {
 		if(client.isRunning()) {
-			ReceiveFile receiveFile  = client.getReceiveFile();
+			UserState userState = client.getUserState();
+			ReceiveFile receiveFile  = userState.getReceiveFile();
 			if(receiveFile == null) {
 				try {
 					String file;
@@ -263,8 +274,8 @@ class ClientDownloadCommand implements ICommand {
 					msg.addKey("type", "download");
 					msg.addKey("file", file);
 
-					client.setReceiveFile(receiveFile);
-					client.write(msg);
+					userState.setReceiveFile(receiveFile);
+					client.getUserState().getChannelHelper().getWriter().write(msg);
 					System.out.println("Receive file...");
 				} catch (IOException ioe) {
 					ioe.printStackTrace();

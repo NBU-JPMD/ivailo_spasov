@@ -1,3 +1,5 @@
+package com.ispasov.nbujpmd.common.channel;
+
 import java.nio.channels.SocketChannel;
 
 public class ChannelHelper {

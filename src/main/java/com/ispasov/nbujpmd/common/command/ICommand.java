@@ -1,9 +1,4 @@
-
-class ExitException extends Exception {
-    public ExitException(String message) {
-        super(message);
-    }
-}
+package com.ispasov.nbujpmd.common.command;
 
 public interface ICommand {
 	public boolean onCommand(String... args) throws ExitException;

@@ -1,48 +1,22 @@
+package com.ispasov.nbujpmd.server;
+
+import com.ispasov.nbujpmd.common.channel.ChannelHelper;
+import com.ispasov.nbujpmd.common.channel.ChannelReader;
+import com.ispasov.nbujpmd.common.protocol.ProtocolHandler;
+import com.ispasov.nbujpmd.common.SendFile;
+import com.ispasov.nbujpmd.common.ReceiveFile;
+import com.ispasov.nbujpmd.common.protocol.cmd.*;
+import com.ispasov.nbujpmd.common.command.CommandHandler;
+import com.ispasov.nbujpmd.common.protocol.ISMsg;
+import com.ispasov.nbujpmd.common.UserManager;
+import com.ispasov.nbujpmd.common.UserState;
+
 import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 import java.net.*;
 import java.io.*;
 import java.nio.file.*;
-
-class UserState {
-	private String user = null;
-	private ChannelHelper helper = null;
-	private ReceiveFile receiveFile = null;
-	private SendFile sendFile = null;
-
-	public UserState(ChannelHelper helper) {
-		this.helper = helper;
-	}
-
-	public String getUser() {
-		return user;
-	}
-
-	public void setUser(String user) {
-		this.user = user;
-	}
-
-	public ChannelHelper getChannelHelper() {
-		return helper;
-	}
-
-	public void setReceiveFile(ReceiveFile receiveFile) {
-		this.receiveFile = receiveFile;
-	}
-
-	public ReceiveFile getReceiveFile() {
-		return receiveFile;
-	}
-
-	public void setSendFile(SendFile sendFile) {
-		this.sendFile = sendFile;
-	}
-
-	public SendFile getSendFile() {
-		return sendFile;
-	}
-}
 
 public class Server {
 	private static final int defaultPort = 6969;
@@ -123,21 +97,11 @@ public class Server {
 			CloseSelectableChannel(cl);
 			synchronized (userState) {
 				userManager.disconnectUser(userState.getUser());
-				ReceiveFile receiveFile = userState.getReceiveFile();
-				if(receiveFile != null) {
-					receiveFile.close();
-					receiveFile.deleteFile();
-					receiveFile = null;
-				}
-				SendFile sendFile = userState.getSendFile();
-				if(sendFile != null) {
-					sendFile.close();
-					sendFile = null;
-				}
+				userState.close();
 			}
 		}
 	}
-	
+
 	public synchronized void startServer(int port) throws IOException {
 		running = true;
 		System.out.println("Starting at port " + port);

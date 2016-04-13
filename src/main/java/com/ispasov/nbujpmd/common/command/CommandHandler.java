@@ -1,3 +1,5 @@
+package com.ispasov.nbujpmd.common.command;
+
 import java.util.ArrayList;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;

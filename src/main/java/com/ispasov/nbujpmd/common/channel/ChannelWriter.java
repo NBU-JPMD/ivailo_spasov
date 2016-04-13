@@ -1,3 +1,5 @@
+package com.ispasov.nbujpmd.common.channel;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.io.IOException;

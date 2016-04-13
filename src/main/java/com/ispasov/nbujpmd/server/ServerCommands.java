@@ -1,3 +1,9 @@
+package com.ispasov.nbujpmd.server;
+
+import com.ispasov.nbujpmd.common.command.ICommand;
+import com.ispasov.nbujpmd.common.command.ExitException;
+import com.ispasov.nbujpmd.common.UserManager;
+
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.IOException;

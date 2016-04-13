@@ -1,3 +1,7 @@
+package com.ispasov.nbujpmd.common.protocol;
+
+import com.ispasov.nbujpmd.common.channel.ChannelHelper;
+
 import java.io.IOException;
 
 public interface IProtocolCmd {

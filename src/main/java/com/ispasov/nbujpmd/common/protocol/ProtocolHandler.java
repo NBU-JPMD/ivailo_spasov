@@ -1,18 +1,12 @@
+package com.ispasov.nbujpmd.common.protocol;
+
+import com.ispasov.nbujpmd.common.channel.ChannelHelper;
+import com.ispasov.nbujpmd.common.protocol.cmd.ErrorCmd;
+
 import java.util.ArrayList;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
-
-class ErrorCmd implements IProtocolCmd {
-	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) {
-		System.out.println(msg);
-		return false;
-	}
-
-	public String[] getFilters() {
-		return new String[]{"error"};
-	}
-}
 
 public class ProtocolHandler {
 	private ArrayList<IProtocolCmd> cmdList = new ArrayList<>();
@@ -34,7 +28,7 @@ public class ProtocolHandler {
 		}
 	}
 
-	void shutdown() {
+	public void shutdown() {
 		fixedPool.shutdown();
 	}
 }

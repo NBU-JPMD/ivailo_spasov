@@ -1,3 +1,5 @@
+package com.ispasov.nbujpmd.common;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;

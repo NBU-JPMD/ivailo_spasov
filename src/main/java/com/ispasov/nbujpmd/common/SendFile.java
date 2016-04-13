@@ -1,3 +1,7 @@
+package com.ispasov.nbujpmd.common;
+
+import com.ispasov.nbujpmd.common.protocol.ISMsg;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -24,7 +28,7 @@ public class SendFile {
 
 	private void CreateFile(String fileName, String uploadType) throws IOException {
 		File inFile = new File(fileName);
-		if(!inFile.exists() || inFile.isDirectory()) { 
+		if(!inFile.exists() || inFile.isDirectory()) {
 			throw new IOException("missing file");
 		}
 
@@ -58,7 +62,7 @@ public class SendFile {
 		ISMsg msg = new ISMsg();
 		msg.addKey("type", "piece");
 		msg.addKey("data", dataBuff);
-		msg.addKey("piece", currentPiece);		
+		msg.addKey("piece", currentPiece);
 		currentPiece++;
 		return msg;
 	}

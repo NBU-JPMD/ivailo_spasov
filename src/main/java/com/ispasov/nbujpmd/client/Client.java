@@ -1,3 +1,12 @@
+package com.ispasov.nbujpmd.client;
+
+import com.ispasov.nbujpmd.common.channel.ChannelHelper;
+import com.ispasov.nbujpmd.common.protocol.ProtocolHandler;
+import com.ispasov.nbujpmd.common.UserState;
+import com.ispasov.nbujpmd.common.protocol.cmd.*;
+import com.ispasov.nbujpmd.common.command.CommandHandler;
+import com.ispasov.nbujpmd.common.protocol.ISMsg;
+
 import java.nio.*;
 import java.nio.channels.*;
 import java.io.*;
@@ -11,23 +20,10 @@ public class Client {
 	private ChannelHelper helper = null;
 	private Thread recvThread = null;
 	private ProtocolHandler protocolHandler = null;
-	private SendFile sendFile;
-	private ReceiveFile receiveFile;
+	private UserState userState = null;
 
-	public SendFile getSendFile() {
-		return sendFile;
-	}
-
-	public void setSendFile(SendFile sendFile) {
-		this.sendFile = sendFile;
-	}
-
-	public ReceiveFile getReceiveFile() {
-		return receiveFile;
-	}
-
-	public void setReceiveFile(ReceiveFile receiveFile) {
-		this.receiveFile = receiveFile;
+	public UserState getUserState() {
+		return userState;
 	}
 
 	public static String getDefaultHost() {
@@ -60,9 +56,10 @@ public class Client {
 		protocolHandler.registerCommand(new EchoCmd());
 		protocolHandler.registerCommand(new AuthRspCmd());
 		protocolHandler.registerCommand(new ListRspCmd());
-		protocolHandler.registerCommand(new UploadRspCmd(this));
-		protocolHandler.registerCommand(new DownloadRspCmd(this));
-		protocolHandler.registerCommand(new ClientPieceCmd(this));
+		protocolHandler.registerCommand(new UploadRspCmd());
+		protocolHandler.registerCommand(new DownloadRspCmd());
+		protocolHandler.registerCommand(new ClientPieceCmd());
+		userState = new UserState(helper);
 
 		recvThread = new Thread() {
 			public void run() {
@@ -73,7 +70,7 @@ public class Client {
 							String type = (String)msg.getData("type");
 							if(type != null) {
 								if(protocolHandler != null) {
-									protocolHandler.handleMsg(type, msg, helper, null);
+									protocolHandler.handleMsg(type, msg, helper, userState);
 								}
 							}
 						}
@@ -104,15 +101,14 @@ public class Client {
 			closeSelectableChannel(socketChannel);
 			socketChannel = null;
 		}
-		helper = null;
 		if(protocolHandler != null) {
 			protocolHandler.shutdown();
 			protocolHandler = null;
 		}
-	}
-
-	public void write(Object obj) throws IOException {
-		helper.getWriter().write(obj);
+		if(userState != null) {
+			userState.close();
+			userState = null;
+		}
 	}
 
 	public static void main(String [] args) {
