@@ -1,26 +1,23 @@
 package com.ispasov.nbujpmd.common;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileNotFoundException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.IOException;
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 
 public class UserManager implements Serializable {
+	private static final String userFile = "users.dat";
+	private static final long serialVersionUID = 70;
+
 	private static UserManager instance = null;
-	private static String user_file = "users.dat";
-	private HashMap<String, String> users = new HashMap<>();
-	private transient HashSet<String> connected_users = new HashSet<>();
-	static final long serialVersionUID = 69;
+	private Map<String, String> users = new ConcurrentHashMap<>();
+	private transient ConcurrentHashMap<String, Boolean> connectedUsers = new ConcurrentHashMap<>();
 
 	protected UserManager() {
 	}
@@ -44,12 +41,12 @@ public class UserManager implements Serializable {
 
 	public synchronized static UserManager getInstance() {
 		if(instance == null) {
-			try (FileInputStream fin = new FileInputStream(user_file);
-				ObjectInputStream ois = new ObjectInputStream(fin)) {
+			try (FileInputStream fin = new FileInputStream(userFile);
+				 ObjectInputStream ois = new ObjectInputStream(fin)) {
 				instance = (UserManager) ois.readObject();
-				instance.connected_users = new HashSet<>();
+				instance.connectedUsers = new ConcurrentHashMap<>();
 			} catch (Exception e) {
-				e.printStackTrace();
+				System.out.println(userFile + " not found. Creating new empty file.");
 				instance = new UserManager();
 				instance.save();
 			}
@@ -57,29 +54,28 @@ public class UserManager implements Serializable {
 		return instance;
 	}
 
-	public synchronized void addUser(String user, String password) {
+	public void addUser(String user, String password) {
 		users.put(user, getHashString(password));
 	}
 
-	public synchronized void delUser(String user) {
+	public void delUser(String user) {
 		users.remove(user);
 	}
 
-	public synchronized boolean connectUser(String user) {
-		if(users.get(user) != null && !connected_users.contains(user)) {
-			connected_users.add(user);
+	public boolean connectUser(String user) {
+		if(connectedUsers.putIfAbsent(user, true) == null) {
 			return true;
 		}
 		return false;
 	}
 
-	public synchronized void disconnectUser(String user) {
+	public void disconnectUser(String user) {
 		if(user != null) {
-			connected_users.remove(user);
+			connectedUsers.remove(user, true);
 		}
 	}
 
-	public synchronized boolean isUserValid(String user, String password) {
+	public boolean isUserValid(String user, String password) {
 		String ck_password = users.get(user);
 		if(ck_password != null && ck_password.equals(getHashString(password))) {
 			return true;
@@ -87,7 +83,7 @@ public class UserManager implements Serializable {
 		return false;
 	}
 
-	public synchronized String toString() {
+	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("users:");
 		for (Map.Entry<String, String> entry : users.entrySet()) {
@@ -100,12 +96,11 @@ public class UserManager implements Serializable {
 	}
 
 	public synchronized void save() {
-		try (FileOutputStream fin = new FileOutputStream(user_file);
-			ObjectOutputStream ois = new ObjectOutputStream(fin)) {
+		try (FileOutputStream fin = new FileOutputStream(userFile);
+			 ObjectOutputStream ois = new ObjectOutputStream(fin)) {
 			ois.writeObject(this);
 		} catch (Exception e) {
 			e.printStackTrace();
-			instance = new UserManager();
 		}
 	}
 }
