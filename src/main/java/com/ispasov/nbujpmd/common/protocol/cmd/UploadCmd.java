@@ -10,6 +10,9 @@ import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 
 public class UploadCmd implements IProtocolCmd {
+	private static final String[] FILTER = {"upload"};
+
+	@Override
 	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		UserState userState  = (UserState)data;
 		String user;
@@ -62,7 +65,8 @@ public class UploadCmd implements IProtocolCmd {
 		return false;
 	}
 
+	@Override
 	public String[] getFilters() {
-		return new String[]{"upload"};
+		return FILTER;
 	}
 }

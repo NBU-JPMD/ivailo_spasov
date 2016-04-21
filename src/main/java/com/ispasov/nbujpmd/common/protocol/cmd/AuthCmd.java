@@ -9,8 +9,10 @@ import com.ispasov.nbujpmd.common.UserManager;
 import java.io.IOException;
 
 public class AuthCmd implements IProtocolCmd {
-	private UserManager userManager = UserManager.getInstance();
+	private static final String[] FILTER = {"authenticate"};
+	private final UserManager userManager = UserManager.getInstance();
 
+	@Override
 	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		String user = (String)msg.getData("user");
 		String password = (String)msg.getData("password");
@@ -47,7 +49,8 @@ public class AuthCmd implements IProtocolCmd {
 		return false;
 	}
 
+	@Override
 	public String[] getFilters() {
-		return new String[]{"authenticate"};
+		return FILTER;
 	}
 }

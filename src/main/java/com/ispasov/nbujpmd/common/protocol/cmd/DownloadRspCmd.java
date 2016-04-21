@@ -9,6 +9,9 @@ import com.ispasov.nbujpmd.common.ReceiveFile;
 import java.io.IOException;
 
 public class DownloadRspCmd implements IProtocolCmd {
+	private static final String[] FILTER = {"downloadRsp"};
+
+	@Override
 	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		UserState userState = (UserState)data;
 		ReceiveFile receiveFile = userState.getReceiveFile();
@@ -43,7 +46,8 @@ public class DownloadRspCmd implements IProtocolCmd {
 		return false;
 	}
 
+	@Override
 	public String[] getFilters() {
-		return new String[]{"downloadRsp"};
+		return FILTER;
 	}
 }

@@ -2,6 +2,8 @@ package com.ispasov.nbujpmd.common;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
@@ -12,11 +14,12 @@ import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 
 public class UserManager implements Serializable {
-	private static final String userFile = "users.dat";
+	private static final Logger LOG = Logger.getLogger(UserManager.class.getName());
+	private static final String USERFILE = "users.dat";
 	private static final long serialVersionUID = 70;
 
 	private static UserManager instance = null;
-	private Map<String, String> users = new ConcurrentHashMap<>();
+	private final Map<String, String> users = new ConcurrentHashMap<>();
 	private transient ConcurrentHashMap<String, Boolean> connectedUsers = new ConcurrentHashMap<>();
 
 	protected UserManager() {
@@ -41,12 +44,12 @@ public class UserManager implements Serializable {
 
 	public synchronized static UserManager getInstance() {
 		if(instance == null) {
-			try (FileInputStream fin = new FileInputStream(userFile);
+			try (FileInputStream fin = new FileInputStream(USERFILE);
 				 ObjectInputStream ois = new ObjectInputStream(fin)) {
 				instance = (UserManager) ois.readObject();
 				instance.connectedUsers = new ConcurrentHashMap<>();
 			} catch (Exception e) {
-				System.out.println(userFile + " not found. Creating new empty file.");
+				System.out.println(USERFILE + " not found. Creating new empty file.");
 				instance = new UserManager();
 				instance.save();
 			}
@@ -63,10 +66,7 @@ public class UserManager implements Serializable {
 	}
 
 	public boolean connectUser(String user) {
-		if(connectedUsers.putIfAbsent(user, true) == null) {
-			return true;
-		}
-		return false;
+		return connectedUsers.putIfAbsent(user, true) == null;
 	}
 
 	public void disconnectUser(String user) {
@@ -77,12 +77,10 @@ public class UserManager implements Serializable {
 
 	public boolean isUserValid(String user, String password) {
 		String ck_password = users.get(user);
-		if(ck_password != null && ck_password.equals(getHashString(password))) {
-			return true;
-		}
-		return false;
+		return ck_password != null && ck_password.equals(getHashString(password));
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("users:");
@@ -96,11 +94,11 @@ public class UserManager implements Serializable {
 	}
 
 	public synchronized void save() {
-		try (FileOutputStream fin = new FileOutputStream(userFile);
+		try (FileOutputStream fin = new FileOutputStream(USERFILE);
 			 ObjectOutputStream ois = new ObjectOutputStream(fin)) {
 			ois.writeObject(this);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOG.log(Level.SEVERE, e.toString(), e);
 		}
 	}
 }

@@ -2,7 +2,7 @@ package com.ispasov.nbujpmd.common;
 
 import com.ispasov.nbujpmd.common.channel.ChannelHelper;
 
-public class UserState {
+public class UserState implements AutoCloseable {
 	private String user = null;
 	private ChannelHelper helper = null;
 	private ReceiveFile receiveFile = null;

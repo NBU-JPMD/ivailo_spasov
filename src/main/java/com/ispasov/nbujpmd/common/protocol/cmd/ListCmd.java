@@ -7,9 +7,13 @@ import com.ispasov.nbujpmd.common.UserState;
 
 import java.io.IOException;
 import java.io.File;
+import java.util.List;
 import java.util.ArrayList;
 
 public class ListCmd implements IProtocolCmd {
+	private static final String[] FILTER = {"list"};
+
+	@Override
 	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		msg = new ISMsg();
 		UserState userState  = (UserState)data;
@@ -20,7 +24,7 @@ public class ListCmd implements IProtocolCmd {
 
 		if(user != null) {
 			File folder = new File("upload/");
-			ArrayList<String> filesArray = new ArrayList<String>();
+			List<String> filesArray = new ArrayList<>();
 
 			if(folder.exists() && folder.isDirectory()) {
 				File[] listOfFiles = folder.listFiles();
@@ -44,7 +48,8 @@ public class ListCmd implements IProtocolCmd {
 		return false;
 	}
 
+	@Override
 	public String[] getFilters() {
-		return new String[]{"list"};
+		return FILTER;
 	}
 }

@@ -1,35 +1,33 @@
 package com.ispasov.nbujpmd.server;
 
+import com.ispasov.nbujpmd.common.UserState;
+import com.ispasov.nbujpmd.common.UserManager;
 import com.ispasov.nbujpmd.common.channel.ChannelHelper;
 import com.ispasov.nbujpmd.common.channel.ChannelReader;
-import com.ispasov.nbujpmd.common.protocol.ProtocolHandler;
-import com.ispasov.nbujpmd.common.SendFile;
-import com.ispasov.nbujpmd.common.ReceiveFile;
-import com.ispasov.nbujpmd.common.protocol.cmd.*;
 import com.ispasov.nbujpmd.common.command.CommandHandler;
 import com.ispasov.nbujpmd.common.protocol.ISMsg;
-import com.ispasov.nbujpmd.common.UserManager;
-import com.ispasov.nbujpmd.common.UserState;
+import com.ispasov.nbujpmd.common.protocol.cmd.*;
+import com.ispasov.nbujpmd.common.protocol.ProtocolHandler;
 
-import java.nio.*;
-import java.nio.channels.*;
-import java.util.*;
-import java.net.*;
 import java.io.*;
-import java.nio.file.*;
+import java.net.*;
+import java.util.*;
+import java.util.logging.*;
+import java.nio.channels.*;
 
 public class Server {
-	private static final int defaultPort = 6969;
-
+	private static final Logger LOG = Logger.getLogger(Server.class.getName());
+	private static final int DEFAULTPORT = 6969;
+	
+	private final UserManager userManager = UserManager.getInstance();
 	private boolean running = false;
-	private static UserManager userManager = UserManager.getInstance();
 	private Thread recvThread = null;
 	private ServerSocketChannel server_socket_chanel = null;
 	private Selector selector = null;
 	private ProtocolHandler protocolHandler = null;
 
 	public static int getDefaultPort() {
-		return defaultPort;
+		return DEFAULTPORT;
 	}
 
 	public boolean isRunning() {
@@ -43,9 +41,9 @@ public class Server {
 			client.configureBlocking(false);
 			client.register(sel, SelectionKey.OP_READ, new UserState(new ChannelHelper(client)));
 			System.out.println("NEW CLIENT " + client.getRemoteAddress());
-		} catch (IOException ex) {
-			ex.printStackTrace();
+		} catch (IOException ioe) {
 			CloseSelectableChannel(client);
+			LOG.log(Level.SEVERE, ioe.toString(), ioe);
 		}
 	}
 
@@ -54,8 +52,8 @@ public class Server {
 			if(ch != null) {
 				ch.close();
 			}
-		} catch (IOException ex) {
-			ex.printStackTrace();
+		} catch (IOException ioe) {
+			LOG.log(Level.SEVERE, ioe.toString(), ioe);
 		}
 	}
 
@@ -67,8 +65,8 @@ public class Server {
 				}
 				sel.close();
 			}
-		} catch (IOException ex){
-			ex.printStackTrace();
+		} catch (IOException ioe){
+			LOG.log(Level.SEVERE, ioe.toString(), ioe);
 		}
 	}
 
@@ -76,7 +74,7 @@ public class Server {
 		try {
 			ChannelHelper helper = userState.getChannelHelper();
 			ChannelReader reader = helper.getReader();
-			ArrayList<Object> objList = reader.recv();
+			List<Object> objList = reader.recv();
 			if(objList != null) {
 				for(Object obj : objList) {
 					ISMsg msg = (ISMsg)obj;
@@ -93,7 +91,7 @@ public class Server {
 				}
 			}
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			System.out.println("DISCONNECT " + userState.getUser() + " (" + ex.getMessage() + ").");
 			CloseSelectableChannel(cl);
 			synchronized (userState) {
 				userManager.disconnectUser(userState.getUser());
@@ -122,35 +120,7 @@ public class Server {
 		protocolHandler.registerCommand(new DownloadCmd());
 		protocolHandler.registerCommand(new ReqPieceCmd());
 
-		recvThread = new Thread() {
-			public void run() {
-				try {
-					while(running) {
-						if (selector.select() > 0) {
-							Set<SelectionKey> selectedKeys = selector.selectedKeys();
-							Iterator<SelectionKey> iter = selectedKeys.iterator();
-							while (iter.hasNext()) {
-								SelectionKey ky = iter.next();
-								if (ky.isAcceptable()) {
-									HandleAccept(server_socket_chanel, selector);
-								} else if (ky.isReadable()) {
-									HandleRead((SocketChannel)ky.channel(), (UserState)ky.attachment());
-								}
-								iter.remove();
-							}
-						}
-					}
-				} catch (Exception ex) {
-					ex.printStackTrace();
-				} finally {
-					CloseSelectableChannel(server_socket_chanel);
-					CloseSelector(selector);
-					selector = null;
-					server_socket_chanel = null;
-					running = false;
-				}
-			}
-		};
+		recvThread = new RecvThread();
 		recvThread.start();
 	}
 
@@ -174,13 +144,44 @@ public class Server {
 	}
 
 	public static void main(String [] args) {
+		System.out.println("NBUJPMD Server. Type \"help\" for command list");
 		Server srv = new Server();
 
 		CommandHandler commandHandler = new CommandHandler();
 		commandHandler.registerCommand(new ServerCommand(srv));
-		commandHandler.registerCommand(new ServerUsersCommand(userManager));
+		commandHandler.registerCommand(new ServerUsersCommand());
 		commandHandler.start();
 
 		srv.stopServer();
+	}
+
+	private class RecvThread extends Thread {
+			@Override
+			public void run() {
+				try {
+					while(running) {
+						if (selector.select() > 0) {
+							Set<SelectionKey> selectedKeys = selector.selectedKeys();
+							Iterator<SelectionKey> iter = selectedKeys.iterator();
+							while (iter.hasNext()) {
+								SelectionKey ky = iter.next();
+								if (ky.isAcceptable()) {
+									HandleAccept(server_socket_chanel, selector);
+								} else if (ky.isReadable()) {
+									HandleRead((SocketChannel)ky.channel(), (UserState)ky.attachment());
+								}
+								iter.remove();
+							}
+						}
+					}
+				} catch (Exception ex) {
+				} finally {
+					CloseSelectableChannel(server_socket_chanel);
+					CloseSelector(selector);
+					selector = null;
+					server_socket_chanel = null;
+					running = false;
+				}
+			}
 	}
 }

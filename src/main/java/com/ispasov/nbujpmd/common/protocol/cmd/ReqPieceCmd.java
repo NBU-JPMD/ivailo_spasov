@@ -9,6 +9,9 @@ import com.ispasov.nbujpmd.common.SendFile;
 import java.io.IOException;
 
 public class ReqPieceCmd implements IProtocolCmd {
+	private static final String[] FILTER = {"reqPiece"};
+
+	@Override
 	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		UserState userState  = (UserState)data;
 		String user;
@@ -51,7 +54,8 @@ public class ReqPieceCmd implements IProtocolCmd {
 		return false;
 	}
 
+	@Override
 	public String[] getFilters() {
-		return new String[]{"reqPiece"};
+		return FILTER;
 	}
 }

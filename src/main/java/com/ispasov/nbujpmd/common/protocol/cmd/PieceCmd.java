@@ -7,9 +7,14 @@ import com.ispasov.nbujpmd.common.UserState;
 import com.ispasov.nbujpmd.common.ReceiveFile;
 
 import java.io.IOException;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class PieceCmd implements IProtocolCmd {
+	private static final Logger LOG = Logger.getLogger(PieceCmd.class.getName());
+	private static final String[] FILTER = {"piece"};
+
+	@Override
 	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		UserState userState  = (UserState)data;
 		String user;
@@ -33,6 +38,7 @@ public class PieceCmd implements IProtocolCmd {
 					piece = (long)msg.getData("piece");
 					byteData = (byte[])msg.getData("data");
 				} catch (Exception e) {
+					LOG.log(Level.SEVERE, e.toString(), e);
 				}
 
 				try {
@@ -65,7 +71,9 @@ public class PieceCmd implements IProtocolCmd {
 		helper.getWriter().write(msg);
 		return false;
 	}
+
+	@Override
 	public String[] getFilters() {
-		return new String[]{"piece"};
+		return FILTER;
 	}
 }

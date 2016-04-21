@@ -5,13 +5,14 @@ import java.nio.channels.SocketChannel;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
+import java.util.List;
 import java.util.ArrayList;
 
 public class ChannelReader {
-	private final static int bufferSize = 8 * 1024;
-	private final static int headerSize = 4;
+	private final static int BUFFERSIZE = 8 * 1024;
+	private final static int HEADERSIZE = 4;
 
-	private ByteBuffer clientBuffer = ByteBuffer.allocate(bufferSize);
+	private final ByteBuffer clientBuffer = ByteBuffer.allocate(BUFFERSIZE);
 	private SocketChannel socketChannel = null;
 	private int sizeIndex = 0;
 
@@ -19,12 +20,12 @@ public class ChannelReader {
 		this.socketChannel = socketChannel;
 	}
 
-	public synchronized ArrayList<Object> recv() throws IOException {
+	public synchronized List<Object> recv() throws IOException {
 		if(socketChannel.read(clientBuffer) == -1) {
 			throw new IOException("Connection closed");
 		}
 
-		ArrayList<Object> ret = new ArrayList<>();
+		List<Object> ret = new ArrayList<>();
 		Object readObject;
 
 		while((readObject = readObject()) != null) {
@@ -41,9 +42,9 @@ public class ChannelReader {
 	private int getObjectSize() throws IOException {
 		int size = 0;
 		int currentSize = clientBuffer.position();
-		if(currentSize >= headerSize+sizeIndex) {
+		if(currentSize >= HEADERSIZE + sizeIndex) {
 			size = clientBuffer.getInt(sizeIndex);
-			if(size > bufferSize - headerSize || size <= 0) {
+			if(size > BUFFERSIZE - HEADERSIZE || size <= 0) {
 				throw new IOException("wrong recv message size");
 			}
 		}
@@ -62,8 +63,8 @@ public class ChannelReader {
 
 	private Object getObject(int objSize) throws IOException {
 		int currentSize = clientBuffer.position();
-		if(currentSize - sizeIndex >= objSize + headerSize) {
-			clientBuffer.position(sizeIndex+headerSize);
+		if(currentSize - sizeIndex >= objSize + HEADERSIZE) {
+			clientBuffer.position(sizeIndex + HEADERSIZE);
 			try (ByteBufferBackedInputStream bis = new ByteBufferBackedInputStream(clientBuffer);
 				 ObjectInput in = new ObjectInputStream(bis)) {
 				Object ret = in.readObject();
@@ -76,7 +77,6 @@ public class ChannelReader {
 				}
 				return ret;
 			} catch (Exception e) {
-				e.printStackTrace();
 				clientBuffer.clear();
 				throw new IOException("unable to read object from buff");
 			}

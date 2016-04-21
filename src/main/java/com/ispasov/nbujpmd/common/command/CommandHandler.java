@@ -1,17 +1,23 @@
 package com.ispasov.nbujpmd.common.command;
 
-import java.util.ArrayList;
-import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 class HelpCommand implements ICommand {
-	private ArrayList<ICommand> commandList;
+	private static final String[] FILTER = {"help"};
 
-	public HelpCommand(ArrayList<ICommand> commandList) {
+	private final List<ICommand> commandList;
+
+	public HelpCommand(List<ICommand> commandList) {
 		this.commandList = commandList;
 	}
 
+	@Override
 	public boolean onCommand(String... args) throws ExitException {
 		for(ICommand command : commandList) {
 			for(String filter : command.getFilters()) {
@@ -22,31 +28,40 @@ class HelpCommand implements ICommand {
 		return false;
 	}
 
+	@Override
 	public String[] getFilters() {
-		return new String[]{"help"};
+		return FILTER;
 	}
 
+	@Override
 	public String getCommandDescription(String cmd) {
 		return "Display help.";
 	}
 }
 
 class ExitCommand implements ICommand {
+	private static final String[] FILTER = {"quit", "exit"};
+
+	@Override
 	public boolean onCommand(String... args) throws ExitException {
 		throw new ExitException("ExitCommand");
 	}
 
+	@Override
 	public String[] getFilters() {
-		return new String[]{"quit", "exit"};
+		return FILTER;
 	}
 
+	@Override
 	public String getCommandDescription(String cmd) {
 		return "Exit application.";
 	}
 }
 
-public class CommandHandler {
-	private ArrayList<ICommand> commandList = new ArrayList<>();
+public final class CommandHandler {
+	private static final Logger LOG = Logger.getLogger(CommandHandler.class.getName());
+
+	private final List<ICommand> commandList = new ArrayList<>();
 
 	public CommandHandler() {
 		registerCommand(new HelpCommand(commandList));
@@ -80,8 +95,8 @@ public class CommandHandler {
 					System.out.println("Command not found. Type \"help\" for command list.");
 				}
 			}
-		} catch (IOException io) {
-			io.printStackTrace();
+		} catch (IOException ioe) {
+			LOG.log(Level.SEVERE, ioe.toString(), ioe);
 		} catch (ExitException ee) {
 		}
 	}

@@ -3,14 +3,17 @@ package com.ispasov.nbujpmd.common.protocol;
 import com.ispasov.nbujpmd.common.channel.ChannelHelper;
 import com.ispasov.nbujpmd.common.protocol.cmd.ErrorCmd;
 
-import java.util.ArrayList;
 import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 
-public class ProtocolHandler {
-	private ArrayList<IProtocolCmd> cmdList = new ArrayList<>();
-	private ExecutorService fixedPool;
+public final class ProtocolHandler {
+	private final List<IProtocolCmd> cmdList = new ArrayList<>();
+	private final ExecutorService fixedPool;
 
 	public ProtocolHandler(int nThreads) {
 		fixedPool = Executors.newFixedThreadPool(nThreads);
@@ -34,13 +37,15 @@ public class ProtocolHandler {
 }
 
 class ProtocolWorkerThread implements Runnable {
-	private ArrayList<IProtocolCmd> cmdList;
-	private String type;
-	private ISMsg msg;
-	private ChannelHelper helper;
-	private Object data;
+	private static final Logger LOG = Logger.getLogger(ProtocolWorkerThread.class.getName());
 
-	public ProtocolWorkerThread(ArrayList<IProtocolCmd> cmdList, String type, ISMsg msg, ChannelHelper helper, Object data) {
+	private final List<IProtocolCmd> cmdList;
+	private final String type;
+	private ISMsg msg;
+	private final ChannelHelper helper;
+	private final Object data;
+
+	public ProtocolWorkerThread(List<IProtocolCmd> cmdList, String type, ISMsg msg, ChannelHelper helper, Object data) {
 		this.cmdList = cmdList;
 		this.type = type;
 		this.msg = msg;
@@ -67,13 +72,11 @@ class ProtocolWorkerThread implements Runnable {
 				msg.setRespCode(101);
 				msg.addKey("type", "error");
 				msg.addKey("msg", "Unsupported message type.");
-				try {
-					helper.getWriter().write(msg);
-				} catch (IOException e) {
-				}
+				helper.getWriter().write(msg);
+
 			}
 		} catch (IOException ioe) {
-			ioe.printStackTrace();
+			LOG.log(Level.SEVERE, ioe.toString(), ioe);
 		}
 	}
 }

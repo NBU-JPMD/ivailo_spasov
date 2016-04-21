@@ -11,6 +11,7 @@ class ByteBufferBackedInputStream extends InputStream {
         this.buf = buf;
     }
 
+    @Override
     public int read() throws IOException {
         if (!buf.hasRemaining()) {
             return -1;
@@ -18,6 +19,7 @@ class ByteBufferBackedInputStream extends InputStream {
         return buf.get() & 0xFF;
     }
 
+    @Override
     public int read(byte[] bytes, int off, int len) throws IOException {
         if (!buf.hasRemaining()) {
             return -1;

@@ -9,6 +9,9 @@ import com.ispasov.nbujpmd.common.ReceiveFile;
 import java.io.IOException;
 
 public class ClientPieceCmd implements IProtocolCmd {
+	private static final String[] FILTER = {"piece"};
+
+	@Override
 	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		UserState userState = (UserState)data;
 		ReceiveFile receiveFile = userState.getReceiveFile();
@@ -61,7 +64,8 @@ public class ClientPieceCmd implements IProtocolCmd {
 		return false;
 	}
 
+	@Override
 	public String[] getFilters() {
-		return new String[]{"piece"};
+		return FILTER;
 	}
 }

@@ -1,20 +1,21 @@
 package com.ispasov.nbujpmd.client;
 
-import com.ispasov.nbujpmd.common.channel.ChannelHelper;
-import com.ispasov.nbujpmd.common.protocol.ProtocolHandler;
 import com.ispasov.nbujpmd.common.UserState;
-import com.ispasov.nbujpmd.common.protocol.cmd.*;
+import com.ispasov.nbujpmd.common.channel.ChannelHelper;
 import com.ispasov.nbujpmd.common.command.CommandHandler;
 import com.ispasov.nbujpmd.common.protocol.ISMsg;
+import com.ispasov.nbujpmd.common.protocol.cmd.*;
+import com.ispasov.nbujpmd.common.protocol.ProtocolHandler;
 
-import java.nio.*;
-import java.nio.channels.*;
 import java.io.*;
 import java.net.*;
+import java.util.logging.*;
+import java.nio.channels.*;
 
 public class Client {
-	private final static String remoteHost = "localhost";
-	private final static int remotePort = 6969;
+	private static final Logger LOG = Logger.getLogger(Client.class.getName());
+	private static final String REMOTEHOST = "localhost";
+	private static final int REMOTEPORT = 6969;
 
 	private SocketChannel socketChannel = null;
 	private ChannelHelper helper = null;
@@ -27,11 +28,11 @@ public class Client {
 	}
 
 	public static String getDefaultHost() {
-		return remoteHost;
+		return REMOTEHOST;
 	}
 
 	public static int getDefaultPort() {
-		return remotePort;
+		return REMOTEPORT;
 	}
 
 	private void closeSelectableChannel(SelectableChannel ch) {
@@ -39,8 +40,8 @@ public class Client {
 			if(ch != null) {
 				ch.close();
 			}
-		} catch (IOException ex) {
-			ex.printStackTrace();
+		} catch (IOException ioe) {
+			LOG.log(Level.SEVERE, ioe.toString(), ioe);
 		}
 	}
 
@@ -61,29 +62,7 @@ public class Client {
 		protocolHandler.registerCommand(new ClientPieceCmd());
 		userState = new UserState(helper);
 
-		recvThread = new Thread() {
-			public void run() {
-				while(true) {
-					try {
-						for(Object obj : helper.getReader().recv()) {
-							ISMsg msg = (ISMsg)obj;
-							String type = (String)msg.getData("type");
-							if(type != null) {
-								if(protocolHandler != null) {
-									protocolHandler.handleMsg(type, msg, helper, userState);
-								}
-							}
-						}
-					} catch (ClosedByInterruptException cie) {
-						break;
-					} catch (IOException e) {
-						e.printStackTrace();
-						stopClient();
-						break;
-					}
-				}
-			}
-		};
+		recvThread = new RecvThread();
 		recvThread.start();
 	}
 
@@ -92,7 +71,7 @@ public class Client {
 			recvThread.interrupt();
 			try {
 				recvThread.join();
-			} catch (InterruptedException e) {
+			} catch (InterruptedException ie) {
 			} finally {
 				recvThread = null;
 			}
@@ -112,6 +91,7 @@ public class Client {
 	}
 
 	public static void main(String [] args) {
+		System.out.println("NBUJPMD Client. Type \"help\" for command list");
 		Client cl = new Client();
 
 		CommandHandler commandHandler = new CommandHandler();
@@ -124,5 +104,28 @@ public class Client {
 		commandHandler.start();
 
 		cl.stopClient();
+	}
+
+	private class RecvThread extends Thread {
+		@Override
+		public void run() {
+			while(true) {
+				try {
+					for(Object obj : helper.getReader().recv()) {
+						ISMsg msg = (ISMsg)obj;
+						String type = (String)msg.getData("type");
+						if(type != null && protocolHandler != null) {
+							protocolHandler.handleMsg(type, msg, helper, userState);
+						}
+					}
+				} catch (ClosedByInterruptException cie) {
+					break;
+				} catch (IOException ioe) {
+					System.out.println("Disconnected: " + ioe.getMessage());
+					stopClient();
+					break;
+				}
+			}
+		}
 	}
 }

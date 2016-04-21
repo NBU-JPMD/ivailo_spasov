@@ -6,10 +6,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.IOException;
-import java.lang.Math;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SendFile {
-	public static final long pieceSize = 2 * 1024;
+	private static final Logger LOG = Logger.getLogger(SendFile.class.getName());
+	private static final long PIECESIZE = 2 * 1024;
 
 	private long pieces;
 	private long currentPiece;
@@ -34,7 +36,7 @@ public class SendFile {
 
 		currentPiece = 1;
 		length = inFile.length();
-		pieces = (length + pieceSize - 1)/pieceSize;
+		pieces = (length + PIECESIZE - 1) / PIECESIZE;
 
 		in = new FileInputStream(fileName);
 		this.fileName = inFile.getName();
@@ -50,8 +52,8 @@ public class SendFile {
 	}
 
 	public ISMsg getNextMsg() throws IOException {
-		long remBytes = length - ((currentPiece - 1)*pieceSize);
-		int buffSize = (int)Math.min(pieceSize, remBytes);
+		long remBytes = length - ((currentPiece - 1) * PIECESIZE);
+		int buffSize = (int)Math.min(PIECESIZE, remBytes);
 
 		byte[] dataBuff = new byte[buffSize];
 
@@ -73,8 +75,8 @@ public class SendFile {
 				in.close();
 				in = null;
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (IOException ioe) {
+			LOG.log(Level.SEVERE, ioe.toString(), ioe);
 		}
 	}
 

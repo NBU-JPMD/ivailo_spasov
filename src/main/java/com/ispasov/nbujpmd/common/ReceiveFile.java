@@ -5,9 +5,12 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
-import java.lang.IllegalArgumentException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ReceiveFile {
+	private static final Logger LOG = Logger.getLogger(ReceiveFile.class.getName());
+
 	private long pieces;
 	private long currentPiece;
 	private String fileName;
@@ -56,7 +59,7 @@ public class ReceiveFile {
 				out = null;
 			}
 		} catch (IOException ioe) {
-			ioe.printStackTrace();
+			LOG.log(Level.SEVERE, ioe.toString(), ioe);
 		}
 	}
 

@@ -9,6 +9,9 @@ import com.ispasov.nbujpmd.common.SendFile;
 import java.io.IOException;
 
 public class UploadRspCmd implements IProtocolCmd {
+	private static final String[] FILTER = {"uploadRsp", "pieceRsp"};
+
+	@Override
 	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		UserState userState = (UserState)data;
 		SendFile sendFIle = userState.getSendFile();
@@ -32,7 +35,8 @@ public class UploadRspCmd implements IProtocolCmd {
 		return false;
 	}
 
+	@Override
 	public String[] getFilters() {
-		return new String[]{"uploadRsp", "pieceRsp"};
+		return FILTER;
 	}
 }

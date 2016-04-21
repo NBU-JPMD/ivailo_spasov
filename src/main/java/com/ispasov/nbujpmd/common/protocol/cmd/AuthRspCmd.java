@@ -5,6 +5,9 @@ import com.ispasov.nbujpmd.common.protocol.IProtocolCmd;
 import com.ispasov.nbujpmd.common.channel.ChannelHelper;
 
 public class AuthRspCmd implements IProtocolCmd {
+	private static final String[] FILTER = {"authenticateRsp"};
+
+	@Override
 	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) {
 		if(msg.getRespCode() == 0) {
 			System.out.println("user authenticated");
@@ -14,7 +17,8 @@ public class AuthRspCmd implements IProtocolCmd {
 		return false;
 	}
 
+	@Override
 	public String[] getFilters() {
-		return new String[]{"authenticateRsp"};
+		return FILTER;
 	}
 }
