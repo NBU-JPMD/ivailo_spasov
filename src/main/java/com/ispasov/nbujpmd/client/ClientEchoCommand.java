@@ -19,7 +19,7 @@ class ClientEchoCommand implements ICommand {
 	}
 
 	@Override
-	public boolean onCommand(String... args) throws ExitException {
+	public void onCommand(String... args) throws ExitException {
 		if(client.isRunning()) {
 			ISMsg msg = new ISMsg();
 			msg.addKey("type", "echo");
@@ -37,7 +37,6 @@ class ClientEchoCommand implements ICommand {
 		} else {
 			System.out.println("Client is not running.");
 		}
-		return false;
 	}
 
 	@Override

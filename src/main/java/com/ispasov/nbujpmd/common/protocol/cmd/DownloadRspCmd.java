@@ -12,7 +12,7 @@ public class DownloadRspCmd implements IProtocolCmd {
 	private static final String[] FILTER = {"downloadRsp"};
 
 	@Override
-	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+	public void onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		UserState userState = (UserState)data;
 		ReceiveFile receiveFile = userState.getReceiveFile();
 		if(msg.getRespCode() == 0) {
@@ -30,7 +30,7 @@ public class DownloadRspCmd implements IProtocolCmd {
 					userState.setReceiveFile(null);
 					msg.setRespCode(600);
 					System.out.println("Unable to receive file, wrong pieces count.");
-					return false;
+					return;
 				}
 				receiveFile.setPieces(pieces);
 				helper.getWriter().write(msg);
@@ -43,7 +43,6 @@ public class DownloadRspCmd implements IProtocolCmd {
 			}
 			System.out.println(msg);
 		}
-		return false;
 	}
 
 	@Override

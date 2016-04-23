@@ -42,7 +42,7 @@ public class ServerUsersCommand implements ICommand {
 	}
 
 	@Override
-	public boolean onCommand(String... args) throws ExitException {
+	public void onCommand(String... args) throws ExitException {
 		switch(args[0].toLowerCase()) {
 			case "add":
 				addUser();
@@ -54,7 +54,6 @@ public class ServerUsersCommand implements ICommand {
 				System.out.println(userManager.toString());
 				break;
 		}
-		return false;
 	}
 
 	@Override

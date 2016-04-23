@@ -10,14 +10,13 @@ public class EchoCmd implements IProtocolCmd {
 	private static final String[] FILTER = {"echo", "echoRsp"};
 
 	@Override
-	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+	public void onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		if (cmd.equals("echo")) {
 			msg.addKey("type", "echoRsp");
 			helper.getWriter().write(msg);
 		} else if (cmd.equals("echoRsp")){
 			System.out.println(msg);
 		}
-		return false;
 	}
 
 	@Override

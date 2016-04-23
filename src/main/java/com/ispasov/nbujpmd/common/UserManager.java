@@ -84,12 +84,12 @@ public class UserManager implements Serializable {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("users:");
-		for (Map.Entry<String, String> entry : users.entrySet()) {
+		users.forEach((k, v) -> {
 			sb.append("\n");
-			sb.append(entry.getKey());
+			sb.append(k);
 			sb.append(":");
-			sb.append(entry.getValue());
-		}
+			sb.append(v);
+		});
 		return sb.toString();
 	}
 

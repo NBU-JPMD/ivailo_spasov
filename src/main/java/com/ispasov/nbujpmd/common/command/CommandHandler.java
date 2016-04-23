@@ -4,9 +4,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 class HelpCommand implements ICommand {
 	private static final String[] FILTER = {"help"};
@@ -18,14 +20,13 @@ class HelpCommand implements ICommand {
 	}
 
 	@Override
-	public boolean onCommand(String... args) throws ExitException {
-		for(ICommand command : commandList) {
-			for(String filter : command.getFilters()) {
+	public void onCommand(String... args) throws ExitException {
+		commandList.forEach(command -> {
+			Arrays.stream(command.getFilters()).forEach(filter -> {
 				String description = command.getCommandDescription(filter);
 				System.out.println(filter + "\t\t" + ((description != null)?description:""));
-			}
-		}
-		return false;
+			});
+		});
 	}
 
 	@Override
@@ -43,7 +44,7 @@ class ExitCommand implements ICommand {
 	private static final String[] FILTER = {"quit", "exit"};
 
 	@Override
-	public boolean onCommand(String... args) throws ExitException {
+	public void onCommand(String... args) throws ExitException {
 		throw new ExitException("ExitCommand");
 	}
 
@@ -76,22 +77,24 @@ public final class CommandHandler {
 		String commandLine;
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		try {
-			boolean isCommandFound;
 			while((commandLine = br.readLine()) != null) {
 				String[] splitStr = commandLine.split("\\s+");
-				isCommandFound = false;
 				String cmd = splitStr[0].toLowerCase();
-				for(ICommand command : commandList) {
-					for(String filter : command.getFilters()) {
-						if (cmd.equals(filter.toLowerCase())) {
-							isCommandFound = true;
-							if(!command.onCommand(splitStr)) {
-								break;
-							}
-						}
+
+				List<ICommand> runCommand = commandList.stream()
+					.filter(command -> {
+						return Arrays.stream(command.getFilters())
+							.filter(f -> cmd.equals(f))
+							.findAny()
+							.isPresent();
+					})
+					.collect(Collectors.toList());
+
+				if (!runCommand.isEmpty()) {
+					for(ICommand command : runCommand) {
+						command.onCommand(splitStr);
 					}
-				}
-				if (isCommandFound == false) {
+				} else {
 					System.out.println("Command not found. Type \"help\" for command list.");
 				}
 			}

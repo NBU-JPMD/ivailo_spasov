@@ -5,11 +5,13 @@ import com.ispasov.nbujpmd.common.protocol.cmd.ErrorCmd;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 public final class ProtocolHandler {
 	private final List<IProtocolCmd> cmdList = new ArrayList<>();
@@ -56,24 +58,25 @@ class ProtocolWorkerThread implements Runnable {
 	@Override
 	public void run() {
 		try {
-			boolean isCmdFound = false;
-			for(IProtocolCmd cmd : cmdList) {
-				for(String filter : cmd.getFilters()) {
-					if(type.equals(filter)) {
-						isCmdFound = true;
-						if(!cmd.onCommand(type, msg, helper, data)) {
-							break;
-						}
-					}
+			List<IProtocolCmd> runCmd = cmdList.stream()
+				.filter(cmd -> {
+					return Arrays.stream(cmd.getFilters())
+						.filter(f -> type.equals(f))
+						.findAny()
+						.isPresent();
+				})
+				.collect(Collectors.toList());
+
+			if(!runCmd.isEmpty()) {
+				for(IProtocolCmd cmd : runCmd) {
+					cmd.onCommand(type, msg, helper, data);
 				}
-			}
-			if(isCmdFound == false) {
+			} else {
 				msg = new ISMsg();
 				msg.setRespCode(101);
 				msg.addKey("type", "error");
 				msg.addKey("msg", "Unsupported message type.");
 				helper.getWriter().write(msg);
-
 			}
 		} catch (IOException ioe) {
 			LOG.log(Level.SEVERE, ioe.toString(), ioe);

@@ -30,12 +30,12 @@ public class ISMsg implements Serializable {
 		StringBuilder sb = new StringBuilder();
 		sb.append("resp_code=");
 		sb.append(resp_code);
-		for (Map.Entry<String, Object> entry : dict.entrySet()) {
+		dict.forEach((k, v) -> {
 			sb.append("\n");
-			sb.append(entry.getKey());
+			sb.append(k);
 			sb.append("=");
-			sb.append(entry.getValue().toString());
-		}
+			sb.append(v);
+		});
 		return sb.toString();
     }
 }

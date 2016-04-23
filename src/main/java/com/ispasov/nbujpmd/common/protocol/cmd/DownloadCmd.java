@@ -12,7 +12,7 @@ public class DownloadCmd implements IProtocolCmd {
 	private static final String[] FILTER = {"download"};
 
 	@Override
-	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+	public void onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		UserState userState  = (UserState)data;
 		String user;
 
@@ -26,7 +26,7 @@ public class DownloadCmd implements IProtocolCmd {
 					msg.addKey("msg", "file transfer is in progress");
 					msg.setRespCode(501);
 					helper.getWriter().write(msg);
-					return false;
+					return;
 				}
 				String file = null;
 				try {
@@ -51,7 +51,6 @@ public class DownloadCmd implements IProtocolCmd {
 			}
 		}
 		helper.getWriter().write(msg);
-		return false;
 	}
 
 	@Override

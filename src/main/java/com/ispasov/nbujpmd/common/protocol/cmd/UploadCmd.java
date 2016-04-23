@@ -13,7 +13,7 @@ public class UploadCmd implements IProtocolCmd {
 	private static final String[] FILTER = {"upload"};
 
 	@Override
-	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+	public void onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		UserState userState  = (UserState)data;
 		String user;
 		synchronized (userState) {
@@ -26,7 +26,7 @@ public class UploadCmd implements IProtocolCmd {
 					msg.addKey("msg", "file transfer is already in progress");
 					msg.setRespCode(303);
 					helper.getWriter().write(msg);
-					return false;
+					return;
 				}
 
 				String file = null;
@@ -62,7 +62,6 @@ public class UploadCmd implements IProtocolCmd {
 			}
 		}
 		helper.getWriter().write(msg);
-		return false;
 	}
 
 	@Override

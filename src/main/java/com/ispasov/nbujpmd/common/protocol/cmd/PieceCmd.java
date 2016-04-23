@@ -15,7 +15,7 @@ public class PieceCmd implements IProtocolCmd {
 	private static final String[] FILTER = {"piece"};
 
 	@Override
-	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+	public void onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		UserState userState  = (UserState)data;
 		String user;
 
@@ -29,7 +29,7 @@ public class PieceCmd implements IProtocolCmd {
 					msg.addKey("msg", "file transfer is not in progress");
 					msg.setRespCode(401);
 					helper.getWriter().write(msg);
-					return false;
+					return;
 				}
 
 				long piece = 0;
@@ -69,7 +69,6 @@ public class PieceCmd implements IProtocolCmd {
 			}
 		}
 		helper.getWriter().write(msg);
-		return false;
 	}
 
 	@Override

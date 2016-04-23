@@ -12,7 +12,7 @@ public class ClientPieceCmd implements IProtocolCmd {
 	private static final String[] FILTER = {"piece"};
 
 	@Override
-	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+	public void onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		UserState userState = (UserState)data;
 		ReceiveFile receiveFile = userState.getReceiveFile();
 		if(msg.getRespCode() == 0) {
@@ -31,7 +31,7 @@ public class ClientPieceCmd implements IProtocolCmd {
 						receiveFile.close();
 						userState.setReceiveFile(null);
 						System.out.println("Receive file done");
-						return false;
+						return;
 					}
 					msg = new ISMsg();
 					msg.addKey("type", "reqPiece");
@@ -61,7 +61,6 @@ public class ClientPieceCmd implements IProtocolCmd {
 			System.out.println(msg);
 		}
 		helper.getWriter().write(msg);
-		return false;
 	}
 
 	@Override

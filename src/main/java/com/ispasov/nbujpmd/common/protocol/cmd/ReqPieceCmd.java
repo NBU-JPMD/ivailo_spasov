@@ -12,7 +12,7 @@ public class ReqPieceCmd implements IProtocolCmd {
 	private static final String[] FILTER = {"reqPiece"};
 
 	@Override
-	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+	public void onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		UserState userState  = (UserState)data;
 		String user;
 
@@ -26,7 +26,7 @@ public class ReqPieceCmd implements IProtocolCmd {
 					msg.addKey("msg", "no file transfer is in progress");
 					msg.setRespCode(601);
 					helper.getWriter().write(msg);
-					return false;
+					return;
 				}
 				if(msg.getRespCode() == 0) {
 					msg = sendFile.getNextMsg();
@@ -37,7 +37,7 @@ public class ReqPieceCmd implements IProtocolCmd {
 				} else {
 					sendFile.close();
 					userState.setSendFile(null);
-					return false;
+					return;
 				}
 			} else {
 				msg = new ISMsg();
@@ -51,7 +51,6 @@ public class ReqPieceCmd implements IProtocolCmd {
 			}
 		}
 		helper.getWriter().write(msg);
-		return false;
 	}
 
 	@Override

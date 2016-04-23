@@ -12,7 +12,7 @@ public class UploadRspCmd implements IProtocolCmd {
 	private static final String[] FILTER = {"uploadRsp", "pieceRsp"};
 
 	@Override
-	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+	public void onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		UserState userState = (UserState)data;
 		SendFile sendFIle = userState.getSendFile();
 		if(msg.getRespCode() == 0) {
@@ -32,7 +32,6 @@ public class UploadRspCmd implements IProtocolCmd {
 			}
 			System.out.println(msg);
 		}
-		return false;
 	}
 
 	@Override

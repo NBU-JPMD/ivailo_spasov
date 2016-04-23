@@ -21,7 +21,7 @@ public class ClientAuthCommand implements ICommand {
 	}
 
 	@Override
-	public boolean onCommand(String... args) throws ExitException {
+	public void onCommand(String... args) throws ExitException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		try {
 			if(client.isRunning()) {
@@ -48,7 +48,6 @@ public class ClientAuthCommand implements ICommand {
 			LOG.log(Level.SEVERE, ioe.toString(), ioe);
 			client.stopClient();
 		}
-		return false;
 	}
 
 	@Override

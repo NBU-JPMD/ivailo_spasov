@@ -13,7 +13,7 @@ public class ListRspCmd implements IProtocolCmd {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+	public void onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		if(msg.getRespCode() == 0) {
 			System.out.println("Server files:");
 			List<String> filesArray = (ArrayList<String>)msg.getData("files");
@@ -21,7 +21,6 @@ public class ListRspCmd implements IProtocolCmd {
 		} else {
 			System.out.println(msg);
 		}
-		return false;
 	}
 
 	@Override

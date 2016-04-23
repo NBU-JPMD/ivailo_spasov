@@ -14,7 +14,7 @@ public class ListCmd implements IProtocolCmd {
 	private static final String[] FILTER = {"list"};
 
 	@Override
-	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+	public void onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		msg = new ISMsg();
 		UserState userState  = (UserState)data;
 		String user;
@@ -45,7 +45,6 @@ public class ListCmd implements IProtocolCmd {
 		}
 
 		helper.getWriter().write(msg);
-		return false;
 	}
 
 	@Override

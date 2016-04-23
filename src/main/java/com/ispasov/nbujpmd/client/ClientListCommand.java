@@ -19,7 +19,7 @@ class ClientListCommand implements ICommand {
 	}
 
 	@Override
-	public boolean onCommand(String... args) throws ExitException {
+	public void onCommand(String... args) throws ExitException {
 		if(client.isRunning()) {
 			ISMsg msg = new ISMsg();
 			msg.addKey("type", "list");
@@ -32,7 +32,6 @@ class ClientListCommand implements ICommand {
 		} else {
 			System.out.println("Client is not running.");
 		}
-		return false;
 	}
 
 	@Override

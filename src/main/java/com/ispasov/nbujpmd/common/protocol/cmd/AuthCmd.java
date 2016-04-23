@@ -13,7 +13,7 @@ public class AuthCmd implements IProtocolCmd {
 	private final UserManager userManager = UserManager.getInstance();
 
 	@Override
-	public boolean onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
+	public void onCommand(String cmd, ISMsg msg, ChannelHelper helper, Object data) throws IOException {
 		String user = (String)msg.getData("user");
 		String password = (String)msg.getData("password");
 		msg = new ISMsg();
@@ -25,7 +25,7 @@ public class AuthCmd implements IProtocolCmd {
 				msg.addKey("msg", "user is already authenticated");
 				msg.setRespCode(201);
 				helper.getWriter().write(msg);
-				return false;
+				return;
 			}
 			if(userManager.isUserValid(user, password)) {
 				if(userManager.connectUser(user)) {
@@ -46,7 +46,6 @@ public class AuthCmd implements IProtocolCmd {
 			}
 		}
 		helper.getWriter().write(msg);
-		return false;
 	}
 
 	@Override

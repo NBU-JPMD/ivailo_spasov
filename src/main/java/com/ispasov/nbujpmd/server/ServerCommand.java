@@ -14,7 +14,7 @@ public class ServerCommand implements ICommand {
 	}
 
 	@Override
-	public boolean onCommand(String... args) throws ExitException {
+	public void onCommand(String... args) throws ExitException {
 		switch(args[0].toLowerCase()) {
 			case "start":
 				if(server.isRunning()) {
@@ -53,7 +53,6 @@ public class ServerCommand implements ICommand {
 				}
 				break;
 		}
-		return false;
 	}
 
 	@Override

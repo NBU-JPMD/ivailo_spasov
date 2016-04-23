@@ -23,7 +23,7 @@ class ClientDownloadCommand implements ICommand {
 	}
 
 	@Override
-	public boolean onCommand(String... args) throws ExitException {
+	public void onCommand(String... args) throws ExitException {
 		if(client.isRunning()) {
 			UserState userState = client.getUserState();
 			ReceiveFile receiveFile  = userState.getReceiveFile();
@@ -55,7 +55,6 @@ class ClientDownloadCommand implements ICommand {
 		} else {
 			System.out.println("Client is not running.");
 		}
-		return false;
 	}
 
 	@Override

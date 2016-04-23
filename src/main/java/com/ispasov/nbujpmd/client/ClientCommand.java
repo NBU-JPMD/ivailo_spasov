@@ -16,7 +16,7 @@ public class ClientCommand implements ICommand {
 	}
 
 	@Override
-	public boolean onCommand(String... args) throws ExitException {
+	public void onCommand(String... args) throws ExitException {
 		switch(args[0].toLowerCase()) {
 			case "connect":
 				if(client.isRunning()) {
@@ -62,7 +62,6 @@ public class ClientCommand implements ICommand {
 				}
 				break;
 		}
-		return false;
 	}
 
 	@Override
