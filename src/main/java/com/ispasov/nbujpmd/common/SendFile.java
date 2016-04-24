@@ -9,15 +9,16 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class SendFile {
+public class SendFile implements AutoCloseable {
 	private static final Logger LOG = Logger.getLogger(SendFile.class.getName());
 	private static final long PIECESIZE = 2 * 1024;
 
 	private long pieces;
+	private long piceSize;
+	private long fileSize;
 	private long currentPiece;
 	private InputStream in;
 	private String fileName;
-	private long length;
 	private String uploadType;
 
 	public SendFile(String fileName) throws IOException {
@@ -35,8 +36,9 @@ public class SendFile {
 		}
 
 		currentPiece = 1;
-		length = inFile.length();
-		pieces = (length + PIECESIZE - 1) / PIECESIZE;
+		fileSize = inFile.length();
+		pieces = (fileSize + PIECESIZE - 1) / PIECESIZE;
+		piceSize = PIECESIZE;
 
 		in = new FileInputStream(fileName);
 		this.fileName = inFile.getName();
@@ -48,11 +50,13 @@ public class SendFile {
 		msg.addKey("type", uploadType);
 		msg.addKey("file", fileName);
 		msg.addKey("pieces", pieces);
+		msg.addKey("piceSize", piceSize);
+		msg.addKey("fileSize", fileSize);
 		return msg;
 	}
 
 	public ISMsg getNextMsg() throws IOException {
-		long remBytes = length - ((currentPiece - 1) * PIECESIZE);
+		long remBytes = fileSize - ((currentPiece - 1) * PIECESIZE);
 		int buffSize = (int)Math.min(PIECESIZE, remBytes);
 
 		byte[] dataBuff = new byte[buffSize];

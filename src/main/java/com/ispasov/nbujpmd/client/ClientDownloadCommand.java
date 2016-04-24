@@ -37,7 +37,7 @@ class ClientDownloadCommand implements ICommand {
 						System.out.println("Enter file name:");
 						file = br.readLine();
 					}
-					receiveFile = new ReceiveFile(file, 0, "download/");
+					receiveFile = new ReceiveFile(file, "download/", true);
 					ISMsg msg = new ISMsg();
 					msg.addKey("type", "download");
 					msg.addKey("file", file);
@@ -46,8 +46,7 @@ class ClientDownloadCommand implements ICommand {
 					client.getUserState().getChannelHelper().getWriter().write(msg);
 					System.out.println("Receive file...");
 				} catch (IOException ioe) {
-					LOG.log(Level.SEVERE, ioe.toString(), ioe);
-					client.stopClient();
+					System.out.println("Unable to download file: " + ioe.getMessage());
 				}
 			} else {
 				System.out.println("File transfer is already running.");

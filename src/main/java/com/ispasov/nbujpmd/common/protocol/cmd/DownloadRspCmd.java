@@ -18,21 +18,26 @@ public class DownloadRspCmd implements IProtocolCmd {
 		if(msg.getRespCode() == 0) {
 			if(receiveFile != null) {
 				long pieces = -1;
+				long fileSize = -1;
+				long piceSize = -1;
 				try {
 					pieces = (long)msg.getData("pieces");
+					fileSize = (long)msg.getData("fileSize");
+					piceSize = (long)msg.getData("piceSize");
 				}catch (Exception e) {
 				}
 				msg = new ISMsg();
 				msg.addKey("type", "reqPiece");
-				if(pieces < 0) {
+				try {
+					receiveFile.setParams(pieces, fileSize, piceSize);
+				} catch (Exception e) {
 					receiveFile.close();
 					receiveFile.deleteFile();
 					userState.setReceiveFile(null);
 					msg.setRespCode(600);
-					System.out.println("Unable to receive file, wrong pieces count.");
-					return;
+					System.out.println("Unable to receive file: " + e.getMessage());
 				}
-				receiveFile.setPieces(pieces);
+
 				helper.getWriter().write(msg);
 			}
 		} else {

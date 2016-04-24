@@ -31,14 +31,19 @@ public class UploadCmd implements IProtocolCmd {
 
 				String file = null;
 				long pieces = -1;
+				long fileSize = -1;
+				long piceSize = -1;
 				try {
 					file = (String)msg.getData("file");
 					pieces = (long)msg.getData("pieces");
+					fileSize = (long)msg.getData("fileSize");
+					piceSize = (long)msg.getData("piceSize");
 				} catch (Exception e) {
 				}
 
 				try {
-					receiveFile = new ReceiveFile(file, pieces);
+					receiveFile = new ReceiveFile(file, "upload/", false);
+					receiveFile.setParams(pieces, fileSize, piceSize);
 					userState.setReceiveFile(receiveFile);
 					msg = new ISMsg();
 					msg.addKey("type", "uploadRsp");
@@ -46,12 +51,12 @@ public class UploadCmd implements IProtocolCmd {
 				} catch (IllegalArgumentException iae) {
 					msg = new ISMsg();
 					msg.addKey("type", "uploadRsp");
-					msg.addKey("msg", "missing file information");
+					msg.addKey("msg", iae.getMessage());
 					msg.setRespCode(302);
 				} catch (FileAlreadyExistsException fae) {
 					msg = new ISMsg();
 					msg.addKey("type", "uploadRsp");
-					msg.addKey("msg", "file already exist");
+					msg.addKey("msg", fae.getMessage());
 					msg.setRespCode(301);
 				}
 			} else {

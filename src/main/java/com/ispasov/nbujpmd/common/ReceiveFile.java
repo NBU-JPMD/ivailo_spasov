@@ -8,10 +8,11 @@ import java.nio.file.FileAlreadyExistsException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ReceiveFile {
+public class ReceiveFile implements AutoCloseable {
 	private static final Logger LOG = Logger.getLogger(ReceiveFile.class.getName());
-
+	private static final long MAXFILESIZE = 1 * 1024 * 1024; //1 MB
 	private long pieces;
+	private long piceSize;
 	private long currentPiece;
 	private String fileName;
 	private OutputStream out;
@@ -24,32 +25,49 @@ public class ReceiveFile {
 		}
 	}
 
-	public ReceiveFile(String fileName, long pieces) throws IOException, IllegalArgumentException, FileAlreadyExistsException {
-		CreateFile(fileName, pieces, "upload/", false);
-	}
-
-	public ReceiveFile(String fileName, long pieces, String uploadDir) throws IOException, IllegalArgumentException, FileAlreadyExistsException {
-		CreateFile(fileName, pieces, uploadDir, true);
-	}
-
-	private void CreateFile(String fileName, long pieces, String uploadDir, boolean del) throws IOException, IllegalArgumentException, FileAlreadyExistsException {
-		this.uploadDir = uploadDir;
-		checkUploadDir();
-		this.fileName = fileName;
-		this.pieces = pieces;
-		if (fileName == null || pieces < 0 || uploadDir == null) {
-			throw new IllegalArgumentException("wrong parameters");
+	public ReceiveFile(String fileName, String uploadDir, boolean deleteOnExist) throws IOException, IllegalArgumentException, FileAlreadyExistsException {
+		if(fileName == null) {
+			throw new IllegalArgumentException("file name is null");
 		}
+
+		if(fileName == null) {
+			throw new IllegalArgumentException("upload direcory is null");
+		}
+
+		this.uploadDir = uploadDir;
+		this.fileName = fileName;
+		checkUploadDir();
+
 		File saveFile = new File(uploadDir + fileName);
 		if (saveFile.exists()) {
-			if(del) {
+			if(deleteOnExist) {
 				deleteFile();
 			} else {
 				throw new FileAlreadyExistsException("file already exist");
 			}
 		}
-		out = new FileOutputStream(saveFile);
+	}
+
+	public void setParams(long pieces, long fileSize, long piceSize) throws IOException, IllegalArgumentException {
+		close();
+
+		if (fileSize < 0 || fileSize > MAXFILESIZE) {
+			throw new IllegalArgumentException("file is too big");
+		}
+
+		if(pieces < 0 ) {
+			throw new IllegalArgumentException("wrong pieces size");
+		}
+
+		if(piceSize < 0 || piceSize*(pieces-1) > fileSize) {
+			throw new IllegalArgumentException("wrong piece size");
+		}
+
 		currentPiece = 1;
+		this.pieces = pieces;
+		this.piceSize = piceSize;
+
+		out = new FileOutputStream(new File(uploadDir + fileName));
 	}
 
 	public void close() {
@@ -67,6 +85,15 @@ public class ReceiveFile {
 		if(piece != currentPiece) {
 			throw new IllegalArgumentException("wrong piece number");
 		}
+
+		if(buffer.length > piceSize) {
+			throw new IllegalArgumentException("pice size is too big");
+		}
+
+		if(out == null) {
+			throw new IllegalArgumentException("file is not open");
+		}
+
 		out.write(buffer);
 		currentPiece++;
 	}
@@ -78,9 +105,5 @@ public class ReceiveFile {
 	public void deleteFile() {
 		File saveFile = new File(uploadDir + fileName);
 		saveFile.delete();
-	}
-
-	public void setPieces(long pieces) {
-		this.pieces = pieces;
 	}
 }

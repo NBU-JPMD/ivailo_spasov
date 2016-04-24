@@ -42,8 +42,7 @@ class ClientUploadCommand implements ICommand {
 					userState.setSendFile(sendFIle);
 					System.out.println("sending file...");
 				} catch (IOException ioe) {
-					LOG.log(Level.SEVERE, ioe.toString(), ioe);
-					client.stopClient();
+					System.out.println("Unable to upload file: " + ioe.getMessage());
 				}
 			} else {
 				System.out.println("File transfer is already running.");
