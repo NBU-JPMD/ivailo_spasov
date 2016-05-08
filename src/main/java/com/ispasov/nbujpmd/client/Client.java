@@ -5,7 +5,9 @@ import com.ispasov.nbujpmd.common.channel.ChannelHelper;
 import com.ispasov.nbujpmd.common.command.CommandHandler;
 import com.ispasov.nbujpmd.common.protocol.ISMsg;
 import com.ispasov.nbujpmd.common.protocol.cmd.*;
-import com.ispasov.nbujpmd.common.protocol.ProtocolHandler;
+import com.ispasov.nbujpmd.common.protocol.IProtocolHandler;
+import com.ispasov.nbujpmd.common.protocol.SingleProtocolHandler;
+
 
 import java.io.*;
 import java.net.*;
@@ -20,7 +22,7 @@ public class Client {
 	private SocketChannel socketChannel = null;
 	private ChannelHelper helper = null;
 	private Thread recvThread = null;
-	private ProtocolHandler protocolHandler = null;
+	private IProtocolHandler protocolHandler = null;
 	private UserState userState = null;
 
 	public UserState getUserState() {
@@ -53,7 +55,7 @@ public class Client {
 		socketChannel = SocketChannel.open();
 		socketChannel.connect(new InetSocketAddress(host, port));
 		helper = new ChannelHelper(socketChannel);
-		protocolHandler = new ProtocolHandler(1);
+		protocolHandler = new SingleProtocolHandler();
 		protocolHandler.registerCommand(new EchoCmd());
 		protocolHandler.registerCommand(new AuthRspCmd());
 		protocolHandler.registerCommand(new ListRspCmd());

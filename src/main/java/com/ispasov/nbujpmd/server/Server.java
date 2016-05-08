@@ -7,7 +7,8 @@ import com.ispasov.nbujpmd.common.channel.ChannelReader;
 import com.ispasov.nbujpmd.common.command.CommandHandler;
 import com.ispasov.nbujpmd.common.protocol.ISMsg;
 import com.ispasov.nbujpmd.common.protocol.cmd.*;
-import com.ispasov.nbujpmd.common.protocol.ProtocolHandler;
+import com.ispasov.nbujpmd.common.protocol.IProtocolHandler;
+import com.ispasov.nbujpmd.common.protocol.ExecutorProtocolHandler;
 
 import java.io.*;
 import java.net.*;
@@ -18,13 +19,14 @@ import java.nio.channels.*;
 public class Server {
 	private static final Logger LOG = Logger.getLogger(Server.class.getName());
 	private static final int DEFAULTPORT = 6969;
-	
+	private static final int EXECUTORTHREADS = 1000;
+
 	private final UserManager userManager = UserManager.getInstance();
 	private boolean running = false;
 	private Thread recvThread = null;
 	private ServerSocketChannel server_socket_chanel = null;
 	private Selector selector = null;
-	private ProtocolHandler protocolHandler = null;
+	private IProtocolHandler protocolHandler = null;
 
 	public static int getDefaultPort() {
 		return DEFAULTPORT;
@@ -111,7 +113,7 @@ public class Server {
 		selector = Selector.open();
 		server_socket_chanel.register(selector, SelectionKey.OP_ACCEPT, null);
 
-		protocolHandler = new ProtocolHandler(100);
+		protocolHandler = new ExecutorProtocolHandler(EXECUTORTHREADS);
 		protocolHandler.registerCommand(new EchoCmd());
 		protocolHandler.registerCommand(new AuthCmd());
 		protocolHandler.registerCommand(new ListCmd());

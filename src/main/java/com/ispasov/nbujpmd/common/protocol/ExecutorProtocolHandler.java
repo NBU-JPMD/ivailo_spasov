@@ -13,11 +13,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
-public final class ProtocolHandler {
+public class ExecutorProtocolHandler implements IProtocolHandler {
 	private final List<IProtocolCmd> cmdList = new ArrayList<>();
 	private final ExecutorService fixedPool;
 
-	public ProtocolHandler(int nThreads) {
+	public ExecutorProtocolHandler(int nThreads) {
 		fixedPool = Executors.newFixedThreadPool(nThreads);
 		registerCommand(new ErrorCmd());
 	}
