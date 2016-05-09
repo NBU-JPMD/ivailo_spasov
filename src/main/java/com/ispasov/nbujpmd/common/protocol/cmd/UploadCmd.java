@@ -40,24 +40,34 @@ public class UploadCmd implements IProtocolCmd {
 					piceSize = (long)msg.getData("piceSize");
 				} catch (Exception e) {
 				}
-
-				try {
-					receiveFile = new ReceiveFile(file, "upload/", false);
-					receiveFile.setParams(pieces, fileSize, piceSize);
-					userState.setReceiveFile(receiveFile);
-					msg = new ISMsg();
-					msg.addKey("type", "uploadRsp");
-					msg.addKey("file", file);
-				} catch (IllegalArgumentException iae) {
-					msg = new ISMsg();
-					msg.addKey("type", "uploadRsp");
-					msg.addKey("msg", iae.getMessage());
-					msg.setRespCode(302);
-				} catch (FileAlreadyExistsException fae) {
-					msg = new ISMsg();
-					msg.addKey("type", "uploadRsp");
-					msg.addKey("msg", fae.getMessage());
-					msg.setRespCode(301);
+				if(file != null && file.endsWith(".txt")) {
+					try {
+						receiveFile = new ReceiveFile(file, "upload/", false);
+						receiveFile.setParams(pieces, fileSize, piceSize);
+						userState.setReceiveFile(receiveFile);
+						msg = new ISMsg();
+						msg.addKey("type", "uploadRsp");
+						msg.addKey("file", file);
+					} catch (IllegalArgumentException iae) {
+						msg = new ISMsg();
+						msg.addKey("type", "uploadRsp");
+						msg.addKey("msg", iae.getMessage());
+						msg.setRespCode(302);
+					} catch (FileAlreadyExistsException fae) {
+						msg = new ISMsg();
+						msg.addKey("type", "uploadRsp");
+						msg.addKey("msg", fae.getMessage());
+						msg.setRespCode(301);
+					}
+				} else {
+						msg = new ISMsg();
+						msg.addKey("type", "uploadRsp");
+						if(file != null) {
+							msg.addKey("msg", "Unsupported file.");
+						} else {
+							msg.addKey("msg", "File name is missing.");
+						}
+						msg.setRespCode(305);
 				}
 			} else {
 				msg = new ISMsg();

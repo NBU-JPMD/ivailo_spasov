@@ -5,6 +5,7 @@ import com.ispasov.nbujpmd.common.protocol.IProtocolCmd;
 import com.ispasov.nbujpmd.common.channel.ChannelHelper;
 import com.ispasov.nbujpmd.common.UserState;
 import com.ispasov.nbujpmd.common.ReceiveFile;
+import com.ispasov.nbujpmd.common.SearchManager;
 
 import java.io.IOException;
 import java.util.logging.Level;
@@ -48,6 +49,9 @@ public class PieceCmd implements IProtocolCmd {
 
 					if(receiveFile.isFileReceived()) {
 						receiveFile.close();
+						SearchManager seachManager = SearchManager.getInstance();
+						seachManager.indexFile(receiveFile.getFileName());
+						seachManager.save();
 						userState.setReceiveFile(null);
 					}
 				} catch (IllegalArgumentException iae) {

@@ -106,4 +106,8 @@ public class ReceiveFile implements AutoCloseable {
 		File saveFile = new File(uploadDir + fileName);
 		saveFile.delete();
 	}
+
+	public String getFileName() {
+		return fileName;
+	}
 }

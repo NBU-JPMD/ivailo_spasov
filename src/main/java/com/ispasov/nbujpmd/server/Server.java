@@ -121,6 +121,7 @@ public class Server {
 		protocolHandler.registerCommand(new PieceCmd());
 		protocolHandler.registerCommand(new DownloadCmd());
 		protocolHandler.registerCommand(new ReqPieceCmd());
+		protocolHandler.registerCommand(new SearchCmd());
 
 		recvThread = new RecvThread();
 		recvThread.start();

@@ -62,6 +62,8 @@ public class Client {
 		protocolHandler.registerCommand(new UploadRspCmd());
 		protocolHandler.registerCommand(new DownloadRspCmd());
 		protocolHandler.registerCommand(new ClientPieceCmd());
+		protocolHandler.registerCommand(new SearchRspCmd());
+
 		userState = new UserState(helper);
 
 		recvThread = new RecvThread();
@@ -103,6 +105,7 @@ public class Client {
 		commandHandler.registerCommand(new ClientListCommand(cl));
 		commandHandler.registerCommand(new ClientUploadCommand(cl));
 		commandHandler.registerCommand(new ClientDownloadCommand(cl));
+		commandHandler.registerCommand(new ClientSearchCommand(cl));
 		commandHandler.start();
 
 		cl.stopClient();
