@@ -11,7 +11,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class SingleProtocolHandler implements IProtocolHandler {
+public final class SingleProtocolHandler implements IProtocolHandler {
 	private static final Logger LOG = Logger.getLogger(SingleProtocolHandler.class.getName());
 	private final List<IProtocolCmd> cmdList = new ArrayList<>();
 

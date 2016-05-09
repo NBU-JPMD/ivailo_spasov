@@ -13,7 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
-public class ExecutorProtocolHandler implements IProtocolHandler {
+public final class ExecutorProtocolHandler implements IProtocolHandler {
 	private final List<IProtocolCmd> cmdList = new ArrayList<>();
 	private final ExecutorService fixedPool;
 
@@ -22,10 +22,12 @@ public class ExecutorProtocolHandler implements IProtocolHandler {
 		registerCommand(new ErrorCmd());
 	}
 
+	@Override
 	public void registerCommand(IProtocolCmd cmd) {
 		cmdList.add(cmd);
 	}
 
+	@Override
 	public void handleMsg(String type, ISMsg msg, ChannelHelper helper, Object data) {
 		if(type != null) {
 			Runnable worker = new ProtocolWorkerThread(cmdList, type, msg, helper, data);
@@ -33,6 +35,7 @@ public class ExecutorProtocolHandler implements IProtocolHandler {
 		}
 	}
 
+	@Override
 	public void shutdown() {
 		fixedPool.shutdown();
 	}

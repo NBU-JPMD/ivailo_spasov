@@ -2,7 +2,6 @@ package com.ispasov.nbujpmd.common.protocol;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.Map;
 
 public class ISMsg implements Serializable {
 	private int resp_code = 0;

@@ -40,6 +40,7 @@ public class UserState implements AutoCloseable {
 		return sendFile;
 	}
 
+	@Override
 	public void close() {
 		if(receiveFile != null) {
 			receiveFile.close();

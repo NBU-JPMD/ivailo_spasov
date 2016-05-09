@@ -30,7 +30,7 @@ public class DownloadRspCmd implements IProtocolCmd {
 				msg.addKey("type", "reqPiece");
 				try {
 					receiveFile.setParams(pieces, fileSize, piceSize);
-				} catch (Exception e) {
+				} catch (IOException | IllegalArgumentException e) {
 					receiveFile.close();
 					receiveFile.deleteFile();
 					userState.setReceiveFile(null);

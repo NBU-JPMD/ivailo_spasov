@@ -73,6 +73,7 @@ public class SendFile implements AutoCloseable {
 		return msg;
 	}
 
+	@Override
 	public void close() {
 		try {
 			if(in != null) {

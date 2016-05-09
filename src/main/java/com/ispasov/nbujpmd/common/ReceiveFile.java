@@ -8,7 +8,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ReceiveFile implements AutoCloseable {
+public final class ReceiveFile implements AutoCloseable {
 	private static final Logger LOG = Logger.getLogger(ReceiveFile.class.getName());
 	private static final long MAXFILESIZE = 1 * 1024 * 1024; //1 MB
 	private long pieces;
@@ -70,6 +70,7 @@ public class ReceiveFile implements AutoCloseable {
 		out = new FileOutputStream(new File(uploadDir + fileName));
 	}
 
+	@Override
 	public void close() {
 		try {
 			if(out != null) {
