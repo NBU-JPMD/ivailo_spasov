@@ -17,7 +17,7 @@ public class ListRspCmd implements IProtocolCmd {
 		if(msg.getRespCode() == 0) {
 			System.out.println("Server files:");
 			List<String> filesArray = (ArrayList<String>)msg.getData("files");
-			filesArray.stream().forEach(file -> System.out.println(file));
+			filesArray.forEach(System.out::println);
 		} else {
 			System.out.println(msg);
 		}

@@ -62,13 +62,8 @@ class ProtocolWorkerThread implements Runnable {
 	public void run() {
 		try {
 			List<IProtocolCmd> runCmd = cmdList.stream()
-				.filter(cmd -> {
-					return Arrays.stream(cmd.getFilters())
-						.filter(f -> type.equals(f))
-						.findAny()
-						.isPresent();
-				})
-				.collect(Collectors.toList());
+				 .filter(f -> IProtocolCmd.matchCommand(type, f))
+				 .collect(Collectors.toList());
 
 			if(!runCmd.isEmpty()) {
 				for(IProtocolCmd cmd : runCmd) {

@@ -5,7 +5,6 @@ import com.ispasov.nbujpmd.common.protocol.cmd.ErrorCmd;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,13 +27,8 @@ public final class SingleProtocolHandler implements IProtocolHandler {
 	public void handleMsg(String type, ISMsg msg, ChannelHelper helper, Object data) {
 		try {
 			List<IProtocolCmd> runCmd = cmdList.stream()
-				.filter(cmd -> {
-					return Arrays.stream(cmd.getFilters())
-						.filter(f -> type.equals(f))
-						.findAny()
-						.isPresent();
-				})
-				.collect(Collectors.toList());
+				 .filter(f -> IProtocolCmd.matchCommand(type, f))
+				 .collect(Collectors.toList());
 
 			if(!runCmd.isEmpty()) {
 				for(IProtocolCmd cmd : runCmd) {

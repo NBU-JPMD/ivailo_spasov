@@ -1,6 +1,7 @@
 package com.ispasov.nbujpmd.common;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,20 +52,22 @@ public class SearchManager implements Serializable {
 		}
 	}
 
+	private void addKeyword(String keyword, String fileName) {
+		List<String> list = Collections.synchronizedList(new ArrayList<String>());
+		list.add(fileName);
+		list = index.putIfAbsent(keyword, list);
+		if(list != null) {
+			list.add(fileName);
+		}
+	}
+
 	public void indexFile(String fileName) {
 		try {
-			List<String> keywords = Files.lines(Paths.get(fileName))
-				.map(line -> { return line.split("\\s+")[0];})
-				.distinct()
-				.collect(Collectors.toList());
-			keywords.forEach(keyword -> {
-				List<String> list = Collections.synchronizedList(new ArrayList<String>());
-				list.add(fileName);
-				list = index.putIfAbsent(keyword, list);
-				if(list != null) {
-					list.add(fileName);
-				}
-			});
+			Set<String> keywords = Files.lines(Paths.get(fileName))
+				 .map(line -> line.split("\\s+")[0])
+				 .collect(Collectors.toSet());
+
+			keywords.forEach(keyword -> addKeyword(keyword, fileName));
 		} catch (IOException ioe) {
 			LOG.log(Level.SEVERE, ioe.toString(), ioe);
 		}

@@ -62,9 +62,7 @@ public class Server {
 	private void CloseSelector(Selector sel) {
 		try {
 			if(sel != null) {
-				sel.keys().forEach((ky) -> {
-					CloseSelectableChannel(ky.channel());
-				});
+				sel.keys().forEach(ky -> CloseSelectableChannel(ky.channel()));
 				sel.close();
 			}
 		} catch (IOException ioe){

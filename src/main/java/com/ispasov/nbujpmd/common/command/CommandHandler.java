@@ -21,12 +21,20 @@ class HelpCommand implements ICommand {
 
 	@Override
 	public void onCommand(String... args) throws ExitException {
-		commandList.forEach(command -> {
-			Arrays.stream(command.getFilters()).forEach(filter -> {
-				String description = command.getCommandDescription(filter);
-				System.out.println(filter + "\t\t" + ((description != null)?description:""));
-			});
-		});
+		commandList.stream()
+			 .map(x -> printCommandInfo(x))
+			 .forEach(System.out::println);
+	}
+
+	private String printCommandInfo(ICommand command) {
+		return Arrays.stream(command.getFilters())
+			 .map(cmd -> printCommandDescription(cmd, command))
+			 .reduce((x, y) -> x + "\n" + y)
+			 .get();
+	}
+
+	private String printCommandDescription(String cmd, ICommand command) {
+		return cmd + "\t\t" + command.getCommandDescription(cmd);
 	}
 
 	@Override
@@ -82,13 +90,8 @@ public final class CommandHandler {
 				String cmd = splitStr[0].toLowerCase();
 
 				List<ICommand> runCommand = commandList.stream()
-					.filter(command -> {
-						return Arrays.stream(command.getFilters())
-							.filter(f -> cmd.equals(f))
-							.findAny()
-							.isPresent();
-					})
-					.collect(Collectors.toList());
+					 .filter(f -> ICommand.matchCommand(cmd, f))
+					 .collect(Collectors.toList());
 
 				if (!runCommand.isEmpty()) {
 					for(ICommand command : runCommand) {
