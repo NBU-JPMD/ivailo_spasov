@@ -2,6 +2,7 @@ package com.ispasov.nbujpmd.server;
 
 import com.ispasov.nbujpmd.common.UserState;
 import com.ispasov.nbujpmd.common.UserManager;
+import com.ispasov.nbujpmd.common.SearchManager;
 import com.ispasov.nbujpmd.common.channel.ChannelHelper;
 import com.ispasov.nbujpmd.common.channel.ChannelReader;
 import com.ispasov.nbujpmd.common.command.CommandHandler;
@@ -144,9 +145,18 @@ public class Server {
 		}
 	}
 
+	public void loadPlugins() {
+		try {
+			SearchManager seachManager = SearchManager.getInstance();
+			seachManager.loadPlugin("bg.nbu.java.server.plugin.IndexService");
+		} catch (Exception | UnsatisfiedLinkError e){
+		}
+	}
+
 	public static void main(String [] args) {
 		System.out.println("NBUJPMD Server. Type \"help\" for command list");
 		Server srv = new Server();
+		srv.loadPlugins();
 
 		CommandHandler commandHandler = new CommandHandler();
 		commandHandler.registerCommand(new ServerCommand(srv));
