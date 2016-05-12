@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
@@ -89,8 +90,8 @@ public class SearchManager implements Serializable {
 			Set<String> keywords = Files.lines(Paths.get(fileName))
 				 .flatMap(line -> pluginIndex(line))
 				 .collect(Collectors.toSet());
-
-			keywords.forEach(keyword -> addKeyword(keyword, fileName));
+			String file = new File(fileName).getName();
+			keywords.forEach(keyword -> addKeyword(keyword, file));
 		} catch (IOException ioe) {
 			LOG.log(Level.SEVERE, ioe.toString(), ioe);
 		} catch (RuntimeException re) {
@@ -123,8 +124,8 @@ public class SearchManager implements Serializable {
 				 .map(line -> defaultIndex(line))
 				 .filter(keyword -> keyword != null)
 				 .collect(Collectors.toSet());
-
-			keywords.forEach(keyword -> addKeyword(keyword, fileName));
+			String file = new File(fileName).getName();
+			keywords.forEach(keyword -> addKeyword(keyword, file));
 		} catch (IOException ioe) {
 			LOG.log(Level.SEVERE, ioe.toString(), ioe);
 		}

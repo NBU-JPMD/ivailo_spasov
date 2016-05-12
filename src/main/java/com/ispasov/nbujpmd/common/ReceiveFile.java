@@ -109,6 +109,6 @@ public final class ReceiveFile implements AutoCloseable {
 	}
 
 	public String getFileName() {
-		return fileName;
+		return uploadDir + fileName;
 	}
 }
