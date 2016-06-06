@@ -149,6 +149,7 @@ public class Server {
 		try {
 			SearchManager seachManager = SearchManager.getInstance();
 			seachManager.loadPlugin("bg.nbu.java.server.plugin.IndexService");
+			System.out.println("bg.nbu.java.server.plugin.IndexService plugin loaded.");
 		} catch (Exception | UnsatisfiedLinkError e){
 		}
 	}
