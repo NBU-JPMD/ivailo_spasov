@@ -1,5 +1,7 @@
 package com.ispasov.nbujpmd.common;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -13,13 +15,45 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 
+class UserData implements Serializable {
+	private static final long serialVersionUID = 69;
+	private String password;
+	private boolean isAdmin;
+
+	public UserData(String password, boolean isAdmin) {
+		this.password = password;
+		this.isAdmin = isAdmin;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	public boolean getIsAdmin() {
+		return isAdmin;
+	}
+
+	public void setIsAdmin(boolean isAdmin) {
+		this.isAdmin = isAdmin;
+	}
+
+	@Override
+	public String toString() {
+		return password + ":" + isAdmin;
+	}
+}
+
 public class UserManager implements Serializable {
 	private static final Logger LOG = Logger.getLogger(UserManager.class.getName());
 	private static final String USERFILE = "users.dat";
-	private static final long serialVersionUID = 70;
+	private static final long serialVersionUID = 71;
 
 	private static UserManager instance = null;
-	private final Map<String, String> users = new ConcurrentHashMap<>();
+	private final Map<String, UserData> users = new ConcurrentHashMap<>();
 	private transient ConcurrentHashMap<String, Boolean> connectedUsers = new ConcurrentHashMap<>();
 
 	protected UserManager() {
@@ -57,12 +91,38 @@ public class UserManager implements Serializable {
 		return instance;
 	}
 
+	public List<String> getAllUsers() {
+		return new ArrayList<String>(users.keySet());
+	}
+
+	public boolean isUserValid(String user) {
+		return users.containsKey(user);
+	}
+
 	public void addUser(String user, String password) {
-		users.put(user, getHashString(password));
+		addUser(user, password, false);
+	}
+
+	public void addUser(String user, String password, boolean admin) {
+		UserData userData = users.putIfAbsent(user, new UserData(getHashString(password), admin));
+		if(userData != null) {
+			userData.setPassword(getHashString(password));
+		}
+	}
+
+	public boolean isAdmin(String user) {
+		UserData userData = users.get(user);
+		if(userData == null)
+			return false;
+		return userData.getIsAdmin();
 	}
 
 	public void delUser(String user) {
 		users.remove(user);
+	}
+
+	public boolean isConnected(String user) {
+		return connectedUsers.containsKey(user);
 	}
 
 	public boolean connectUser(String user) {
@@ -76,7 +136,10 @@ public class UserManager implements Serializable {
 	}
 
 	public boolean isUserValid(String user, String password) {
-		String ck_password = users.get(user);
+		UserData userData = users.get(user);
+		if(userData == null)
+			return false;
+		String ck_password = userData.getPassword();
 		return ck_password != null && ck_password.equals(getHashString(password));
 	}
 

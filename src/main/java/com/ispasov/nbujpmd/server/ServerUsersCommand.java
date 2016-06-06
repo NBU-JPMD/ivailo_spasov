@@ -22,7 +22,14 @@ public class ServerUsersCommand implements ICommand {
 			String user = br.readLine();
 			System.out.println("password:");
 			String password = br.readLine();
-			userManager.addUser(user, password);
+			System.out.println("is admin(0/1):");
+			String isAdmin = br.readLine();
+			int admin = 0;
+			try {
+				admin = Integer.parseInt(isAdmin);
+			} catch (Exception e) {
+			}
+			userManager.addUser(user, password, !(admin == 0));
 			userManager.save();
 		} catch (IOException ioe) {
 			LOG.log(Level.SEVERE, ioe.toString(), ioe);

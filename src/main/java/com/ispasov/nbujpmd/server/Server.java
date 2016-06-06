@@ -16,6 +16,8 @@ import java.net.*;
 import java.util.*;
 import java.util.logging.*;
 import java.nio.channels.*;
+import java.rmi.*;
+import java.rmi.server.*;
 
 public class Server {
 	private static final Logger LOG = Logger.getLogger(Server.class.getName());
@@ -29,12 +31,32 @@ public class Server {
 	private Selector selector = null;
 	private IProtocolHandler protocolHandler = null;
 
+	private ServerRmiLogin rmiLogin = null;
+
 	public static int getDefaultPort() {
 		return DEFAULTPORT;
 	}
 
 	public boolean isRunning() {
 		return running;
+	}
+
+	public void disconnectUser(String user) {
+		if(selector == null) {
+			return;
+		}
+
+		for(SelectionKey ky : selector.keys()) {
+			UserState userState = (UserState)ky.attachment();
+			synchronized (userState) {
+				if (user.equals(userState.getUser())) {
+					CloseSelectableChannel(ky.channel());
+					userManager.disconnectUser(userState.getUser());
+					userState.close();
+					break;
+				}
+			}
+		}
 	}
 
 	private void HandleAccept(ServerSocketChannel ssc, Selector sel) {
@@ -101,6 +123,33 @@ public class Server {
 		}
 	}
 
+	private void registerRMI() {
+		try {
+			rmiLogin = new ServerRmiLogin(this);
+			Naming.rebind("rmi://0.0.0.0/ServerRmiLogin", rmiLogin);
+		} catch (MalformedURLException mue) {
+			LOG.log(Level.SEVERE, mue.toString(), mue);
+		} catch (RemoteException re) {
+			LOG.log(Level.SEVERE, re.toString(), re);
+		}
+	}
+
+	private void unregisterRMI() {
+		try {
+			if(Naming.lookup("rmi://0.0.0.0/ServerRmiLogin") != null) {
+				Naming.unbind("rmi://0.0.0.0/ServerRmiLogin");
+			}
+		} catch (Exception e) {
+		}
+		try {
+			if(rmiLogin != null) {
+				UnicastRemoteObject.unexportObject(rmiLogin, true);
+				rmiLogin = null;
+			}
+		} catch (NoSuchObjectException nso) {
+		}
+	}
+
 	public synchronized void startServer(int port) throws IOException {
 		running = true;
 		System.out.println("Starting at port " + port);
@@ -124,10 +173,12 @@ public class Server {
 
 		recvThread = new RecvThread();
 		recvThread.start();
+		registerRMI();
 	}
 
 	public synchronized void stopServer() {
 		running = false;
+		unregisterRMI();
 		if(selector != null) {
 			selector.wakeup();
 		}
@@ -165,6 +216,7 @@ public class Server {
 		commandHandler.start();
 
 		srv.stopServer();
+		System.exit(0);
 	}
 
 	private class RecvThread extends Thread {

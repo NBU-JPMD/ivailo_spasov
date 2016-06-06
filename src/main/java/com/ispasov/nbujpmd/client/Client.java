@@ -7,7 +7,7 @@ import com.ispasov.nbujpmd.common.protocol.ISMsg;
 import com.ispasov.nbujpmd.common.protocol.cmd.*;
 import com.ispasov.nbujpmd.common.protocol.IProtocolHandler;
 import com.ispasov.nbujpmd.common.protocol.SingleProtocolHandler;
-
+import com.ispasov.nbujpmd.common.IRmiAdmin;
 
 import java.io.*;
 import java.net.*;
@@ -24,6 +24,22 @@ public class Client {
 	private Thread recvThread = null;
 	private IProtocolHandler protocolHandler = null;
 	private UserState userState = null;
+	private IRmiAdmin rmiAdmin = null;
+
+	public void setRmiAdmin(IRmiAdmin rmiAdmin) {
+		this.rmiAdmin = rmiAdmin;
+	}
+
+	public IRmiAdmin getRmiAdmin() {
+		return rmiAdmin;
+	}
+
+	public String getHostname() {
+		if(socketChannel != null) {
+			return socketChannel.socket().getInetAddress().getHostName();
+		}
+		return null;
+	}
 
 	public UserState getUserState() {
 		return userState;
@@ -106,9 +122,11 @@ public class Client {
 		commandHandler.registerCommand(new ClientUploadCommand(cl));
 		commandHandler.registerCommand(new ClientDownloadCommand(cl));
 		commandHandler.registerCommand(new ClientSearchCommand(cl));
+		commandHandler.registerCommand(new ClientRmiCommand(cl));
 		commandHandler.start();
 
 		cl.stopClient();
+
 	}
 
 	private class RecvThread extends Thread {
@@ -129,6 +147,14 @@ public class Client {
 					System.out.println("Disconnected: " + ioe.getMessage());
 					stopClient();
 					break;
+				} finally {
+					if(rmiAdmin != null) {
+						try {
+							rmiAdmin.logout();
+							rmiAdmin = null;
+						} catch (Exception e){
+						}
+					}
 				}
 			}
 		}
